@@ -341,7 +341,7 @@
       <button class="btn btn-sm" onclick="handleUitloggen()">Uitloggen</button>
     </div>
     <div class="gebruiker-switch">
-      <label for="gebruiker-select">Demo-databron (localStorage, tot Fase 2)</label>
+      <label for="gebruiker-select">Demo-databron (alleen nog Marktplaats/Nieuws)</label>
       <select id="gebruiker-select" onchange="wisselGebruiker(this.value)"></select>
       <span class="rol-badge" id="rol-badge-huidig"></span>
     </div>
@@ -376,7 +376,7 @@
 
     <!-- MIJN ACCOUNT (Supabase — echte auth, Fase 1) -->
     <section id="view-account" class="view hidden">
-      <div class="account-hint">Dit is de echte, met Supabase Auth beveiligde account-pagina. Leden, Sessies, Banen en Wedstrijden praten inmiddels ook echt met de database (Fase 2). Marktplaats, Nieuws, Contributie en Financieel gebruiken nog de demo-databron hierboven in de zijbalk — dat volgt in latere fases.</div>
+      <div class="account-hint">Dit is de echte, met Supabase Auth beveiligde account-pagina. Leden, Sessies, Banen, Wedstrijden, Contributie en Financieel praten inmiddels allemaal echt met de database. Alleen Marktplaats en Nieuws gebruiken nog de demo-databron hierboven in de zijbalk — dat volgt in Fase 4.</div>
       <div class="paneel">
         <div class="paneel-hoofd"><h2>Mijn profiel</h2></div>
         <div class="paneel-body">
@@ -889,6 +889,7 @@ async function opnieuwLadenNaAuth(){
   renderAccount();
   renderAlles();
   toonApp();
+  verwerkBetalingRedirect();
 }
 
 function bijwerkenAuthStatus(){
@@ -974,6 +975,7 @@ let dbSessies = [];
 let dbSessieDeelnemers = [];
 let dbBaanreserveringen = [];
 let dbWedstrijden = [];
+let dbBetalingen = [];
 let dbOrganisatie = null;
 
 function dbLidNaam(lidId){
@@ -1029,11 +1031,17 @@ async function laadOrganisatie(){
     .from('organisaties').select('*').eq('id', mijnLid.organisatie_id).maybeSingle();
   if(!error) dbOrganisatie = data;
 }
+async function laadBetalingen(){
+  const { data, error } = await supabaseClient
+    .from('betalingen').select('*').order('aangemaakt_op', { ascending:false });
+  if(error){ console.error(error); return; }
+  dbBetalingen = data;
+}
 
 async function laadDatabaseData(){
   await Promise.all([
     laadLeden(), laadBundels(), laadSessies(), laadSessieDeelnemers(),
-    laadBaanreserveringen(), laadWedstrijden(), laadOrganisatie(),
+    laadBaanreserveringen(), laadWedstrijden(), laadOrganisatie(), laadBetalingen(),
   ]);
 }
 
@@ -1124,9 +1132,8 @@ function resetDemoData(){
 
 /* ---------- helpers ---------- */
 function huidigLid(){ return state.leden.find(l => l.id === state.huidigeGebruikerId); }
-function magFinancieelZien(){ const l = huidigLid(); return !!l && (l.rol === 'bestuur' || l.rol === 'penningmeester'); }
+function magFinancieelZien(){ return magLedenBeheren(); } // echte rol: Financieel toont nu echt geld (Fase 3)
 function lidNaam(lidId){ const l = state.leden.find(l => l.id === lidId); return l ? l.naam : 'Onbekend lid'; }
-function bundelNaam(bundelId){ const b = state.bundels.find(b => b.id === bundelId); return b ? b.naam : '—'; }
 function initialen(naam){ return naam.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
 function euro(n){ return '€ ' + Number(n).toFixed(2).replace('.', ','); }
 function datumNL(iso){
@@ -1273,13 +1280,13 @@ function renderDashboard(){
   const actieveLeden = dbLeden.filter(l => l.actief).length;
   const opkomendeSessies = dbSessies.length;
   const openItems = state.marktItems.length;
-  const inkomstenMaand = state.betalingen.filter(b => b.status === 'betaald').reduce((s,b) => s + b.bedrag, 0);
+  const inkomstenMaand = dbBetalingen.filter(b => b.status === 'betaald').reduce((s,b) => s + b.bedrag, 0);
 
   el.innerHTML = `
     <div class="card"><h3>Actieve leden</h3><div class="stat">${actieveLeden}</div></div>
     <div class="card"><h3>Sessies op rooster</h3><div class="stat">${opkomendeSessies}</div></div>
     <div class="card"><h3>Marktplaats-items</h3><div class="stat">${openItems}</div></div>
-    ${magFinancieelZien() ? `<div class="card"><h3>Totale inkomsten</h3><div class="stat">${euro(inkomstenMaand)}</div></div>` : `<div class="card"><h3>Mijn rating</h3><div class="stat">${huidigLid()?.rating ?? '—'}</div></div>`}
+    ${magFinancieelZien() ? `<div class="card"><h3>Totale inkomsten</h3><div class="stat">${euro(inkomstenMaand)}</div></div>` : `<div class="card"><h3>Mijn rating</h3><div class="stat">${mijnLid?.rating ?? '—'}</div></div>`}
   `;
 
   const sessiesEl = document.getElementById('dashboard-sessies');
@@ -1736,71 +1743,70 @@ function addNieuws(e){
 }
 
 /* ============================================================
-   CONTRIBUTIE & BETALINGEN (nep — toont alleen een toast,
-   wordt in Fase 3 vervangen door een echte Mollie-integratie)
+   CONTRIBUTIE & BETALINGEN — echte Mollie-betalingen (Fase 3).
+   doPayment() roept de Edge Function 'create-mollie-payment' aan en
+   stuurt de browser door naar Mollie's hosted checkout. De Edge
+   Function 'mollie-webhook' verwerkt het resultaat server-side —
+   de client wacht hier niet op en mag de betaalstatus dus nooit
+   zelf zetten.
    ============================================================ */
 function renderContributie(){
   const grid = document.getElementById('bundels-grid');
   if(!grid) return;
-  const lid = huidigLid();
 
-  grid.innerHTML = state.bundels.map(b => `
-    <div class="bundel-card ${lid && lid.bundelId === b.id ? 'actief-bundel' : ''}">
+  grid.innerHTML = dbBundels.map(b => `
+    <div class="bundel-card ${mijnLid && mijnLid.bundel_id === b.id ? 'actief-bundel' : ''}">
       <div>
         <div class="prijs">${euro(b.prijs)} <small>/ ${b.geldigheid}</small></div>
         <b>${escapeHtml(b.naam)}</b>
       </div>
       <p>${escapeHtml(b.omschrijving)}</p>
       <div class="sessie-meta">${b.speelbeurten >= 999 ? 'Onbeperkt speelbeurten' : b.speelbeurten + ' speelbeurten'}</div>
-      ${lid && lid.bundelId === b.id
+      ${mijnLid && mijnLid.bundel_id === b.id
         ? `<button class="btn btn-sm" disabled>Huidige bundel</button>`
-        : `<div class="veld-rij" style="margin-top:4px;">
-             <button class="btn btn-primary btn-sm" style="flex:1;" onclick="doPayment('${b.id}','ideal')">iDEAL</button>
-             <button class="btn btn-sm" style="flex:1;" onclick="doPayment('${b.id}','tikkie')">Tikkie</button>
-           </div>`}
+        : `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="doPayment('${b.id}')">Betaal met iDEAL</button>`}
     </div>
   `).join('');
 
   const tbody = document.getElementById('mijn-betalingen-tbody');
-  const mijnBetalingen = state.betalingen.filter(b => b.lidId === state.huidigeGebruikerId).sort((a,b) => new Date(b.aangemaaktOp) - new Date(a.aangemaaktOp));
+  const mijnBetalingen = mijnLid ? dbBetalingen.filter(b => b.lid_id === mijnLid.id) : [];
   tbody.innerHTML = mijnBetalingen.map(b => `
     <tr>
-      <td>${datumNL(b.aangemaaktOp)}</td>
-      <td>${bundelNaam(b.bundelId)}</td>
+      <td>${datumNL(b.aangemaakt_op)}</td>
+      <td>${dbBundelNaam(b.bundel_id)}</td>
       <td>${euro(b.bedrag)}</td>
-      <td>${b.methode.toUpperCase()}</td>
+      <td>${(b.methode || '—').toUpperCase()}</td>
       <td><span class="badge badge-${b.status}">${b.status === 'betaald' ? 'Betaald' : b.status === 'open' ? 'Open' : 'Mislukt'}</span></td>
     </tr>
   `).join('');
   document.getElementById('mijn-betalingen-leeg').classList.toggle('hidden', mijnBetalingen.length > 0);
 }
 
-function doPayment(bundelId, methode){
-  const lid = huidigLid();
-  const bundel = state.bundels.find(b => b.id === bundelId);
+async function doPayment(bundelId){
+  if(!mijnLid) return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const { data, error } = await supabaseClient.functions.invoke('create-mollie-payment', {
+    body: { bundelId },
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  if(error || !data || data.error){
+    toast('Betaling starten mislukt: ' + (data?.error || error?.message || 'onbekende fout'), 'fout');
+    return;
+  }
+  window.location.href = data.checkoutUrl;
+}
 
-  const betaling = {
-    id: uid('bet'),
-    lidId: lid.id,
-    bundelId,
-    bedrag: bundel.prijs,
-    methode,
-    molliePaymentId: 'demo_' + uid('mollie'),
-    status: 'betaald',
-    aangemaaktOp: new Date().toISOString(),
-  };
-  state.betalingen.push(betaling);
-  lid.bundelId = bundelId;
-  lid.gespeeld = 0;
-  save();
-
-  renderContributie();
-  renderFinancieel();
-  toast(`Betaling gelukt (demo) via ${methode === 'ideal' ? 'iDEAL' : 'Tikkie'}. In Fase 3 wordt dit een echte Mollie-betaling.`, 'succes');
+function verwerkBetalingRedirect(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('betaling') === 'voltooid'){
+    toast('Bedankt! We verwerken je betaling — dit kan een paar seconden duren.', 'succes');
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => ververs(), 2000);
+  }
 }
 
 /* ============================================================
-   FINANCIEEL BEHEER (bestuur / penningmeester)
+   FINANCIEEL BEHEER (bestuur / penningmeester) — echte betalingen
    ============================================================ */
 function renderFinancieel(){
   const stats = document.getElementById('financieel-stats');
@@ -1813,9 +1819,9 @@ function renderFinancieel(){
     return;
   }
 
-  const betaald = state.betalingen.filter(b => b.status === 'betaald');
+  const betaald = dbBetalingen.filter(b => b.status === 'betaald');
   const totaal = betaald.reduce((s,b) => s + b.bedrag, 0);
-  const aantalActieveBundels = state.leden.filter(l => l.bundelId).length;
+  const aantalActieveBundels = dbLeden.filter(l => l.bundel_id).length;
   const gemiddeld = betaald.length ? totaal / betaald.length : 0;
 
   stats.innerHTML = `
@@ -1824,15 +1830,14 @@ function renderFinancieel(){
     <div class="card"><h3>Gemiddeld bedrag / betaling</h3><div class="stat">${euro(gemiddeld)}</div></div>
   `;
 
-  const gesorteerd = [...state.betalingen].sort((a,b) => new Date(b.aangemaaktOp) - new Date(a.aangemaaktOp));
-  tbody.innerHTML = gesorteerd.map(b => `
+  tbody.innerHTML = dbBetalingen.map(b => `
     <tr>
-      <td>${datumNL(b.aangemaaktOp)}</td>
-      <td>${lidNaam(b.lidId)}</td>
-      <td>${bundelNaam(b.bundelId)}</td>
+      <td>${datumNL(b.aangemaakt_op)}</td>
+      <td>${dbLidNaam(b.lid_id)}</td>
+      <td>${dbBundelNaam(b.bundel_id)}</td>
       <td>${euro(b.bedrag)}</td>
-      <td>${b.methode.toUpperCase()}</td>
-      <td style="color:var(--tekst-zacht);">${escapeHtml(b.molliePaymentId)}</td>
+      <td>${(b.methode || '—').toUpperCase()}</td>
+      <td style="color:var(--tekst-zacht);">${escapeHtml(b.mollie_payment_id || '—')}</td>
       <td><span class="badge badge-${b.status}">${b.status === 'betaald' ? 'Betaald' : b.status === 'open' ? 'Open' : 'Mislukt'}</span></td>
     </tr>
   `).join('') || `<tr><td colspan="7" class="leeg-financieel">Nog geen betalingen.</td></tr>`;
