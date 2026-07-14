@@ -1,0 +1,1809 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledenpanel — Pickleball Den Haag</title>
+<style>
+  :root{
+    --groen-donker:#0b3d2e;
+    --groen:#15803d;
+    --groen-licht:#16a34a;
+    --lime:#a3e635;
+    --oranje:#f59e0b;
+    --rood:#dc2626;
+    --bg:#f4f6f5;
+    --wit:#ffffff;
+    --tekst:#1f2937;
+    --tekst-zacht:#6b7280;
+    --rand:#e5e7eb;
+    --schaduw:0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--tekst);
+    display:flex;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .hidden{display:none !important;}
+
+  /* Sidebar */
+  .sidebar{
+    width:240px;
+    flex-shrink:0;
+    background:var(--groen-donker);
+    color:#e6f4ec;
+    display:flex;
+    flex-direction:column;
+    padding:20px 14px;
+    position:sticky;
+    top:0;
+    height:100vh;
+  }
+  .sidebar .logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:6px 10px 20px 10px;
+  }
+  .sidebar .logo-badge{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--lime);
+    color:var(--groen-donker);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px;
+  }
+  .sidebar .logo-tekst{font-weight:700;font-size:15px;line-height:1.2;}
+  .sidebar .logo-tekst small{display:block;font-weight:400;font-size:11px;opacity:.65;}
+
+  nav.navlist{display:flex;flex-direction:column;gap:2px;margin-top:8px;}
+  nav.navlist button{
+    display:flex;align-items:center;gap:10px;
+    background:transparent;border:none;color:#dbe9e0;
+    padding:10px 12px;border-radius:9px;font-size:13.5px;text-align:left;
+    transition:background .12s ease;
+  }
+  nav.navlist button:hover{background:rgba(255,255,255,.08);}
+  nav.navlist button.actief{background:var(--groen-licht);color:#fff;font-weight:600;}
+  nav.navlist .navicon{width:18px;text-align:center;opacity:.9;font-size:14px;}
+
+  .sidebar-onder{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);}
+  .gebruiker-switch{display:flex;flex-direction:column;gap:6px;}
+  .gebruiker-switch label{font-size:11px;opacity:.65;text-transform:uppercase;letter-spacing:.03em;}
+  .gebruiker-switch select{
+    background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18);
+    border-radius:8px;padding:7px 8px;font-size:12.5px;
+  }
+  .rol-badge{
+    display:inline-block;margin-top:6px;font-size:10.5px;padding:2px 8px;border-radius:999px;
+    background:var(--lime);color:var(--groen-donker);font-weight:700;letter-spacing:.02em;
+  }
+
+  /* Main */
+  main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{
+    background:var(--wit);border-bottom:1px solid var(--rand);
+    padding:16px 28px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:5;
+  }
+  .topbar h1{font-size:19px;margin:0;}
+  .topbar p{margin:2px 0 0 0;font-size:12.5px;color:var(--tekst-zacht);}
+  .content{padding:24px 28px 60px 28px;}
+
+  .btn{
+    border:1px solid var(--rand);background:var(--wit);color:var(--tekst);
+    padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;
+  }
+  .btn:hover{background:#f9fafb;}
+  .btn-primary{background:var(--groen-licht);border-color:var(--groen-licht);color:#fff;}
+  .btn-primary:hover{background:var(--groen);}
+  .btn-outline-danger{color:var(--rood);border-color:#fecaca;background:#fff;}
+  .btn-outline-danger:hover{background:#fef2f2;}
+  .btn-sm{padding:5px 10px;font-size:12px;border-radius:7px;}
+  .btn-ghost{background:transparent;border-color:transparent;}
+  .btn-ghost:hover{background:#f3f4f6;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* Cards / grid */
+  .grid{display:grid;gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media (max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+
+  .card{
+    background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);
+    padding:18px;box-shadow:var(--schaduw);
+  }
+  .card h3{margin:0 0 4px 0;font-size:13px;color:var(--tekst-zacht);font-weight:600;}
+  .card .stat{font-size:26px;font-weight:800;}
+  .card .stat small{font-size:12px;font-weight:500;color:var(--tekst-zacht);}
+
+  .paneel{background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);box-shadow:var(--schaduw);overflow:hidden;}
+  .paneel-hoofd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--rand);}
+  .paneel-hoofd h2{margin:0;font-size:15px;}
+  .paneel-body{padding:16px 18px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--tekst-zacht);padding:8px 10px;border-bottom:1px solid var(--rand);}
+  td{padding:10px 10px;border-bottom:1px solid #f1f2f4;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.01em;}
+  .badge-lid{background:#e0e7ff;color:#3730a3;}
+  .badge-bestuur{background:#dcfce7;color:#166534;}
+  .badge-penningmeester{background:#fef3c7;color:#92400e;}
+  .badge-actief{background:#dcfce7;color:#166534;}
+  .badge-inactief{background:#f3f4f6;color:#6b7280;}
+  .badge-open{background:#fef3c7;color:#92400e;}
+  .badge-betaald{background:#dcfce7;color:#166534;}
+  .badge-mislukt{background:#fee2e2;color:#991b1b;}
+  .badge-wachtlijst{background:#fee2e2;color:#991b1b;}
+  .badge-deelnemer{background:#dcfce7;color:#166534;}
+
+  .zoekbalk{display:flex;gap:8px;margin-bottom:14px;}
+  .zoekbalk input, .zoekbalk select{
+    padding:8px 11px;border:1px solid var(--rand);border-radius:8px;font-size:13px;background:#fff;
+  }
+  .zoekbalk input{flex:1;min-width:160px;}
+
+  .sessie-groep{margin-bottom:22px;}
+  .sessie-groep h3{font-size:13.5px;color:var(--tekst-zacht);text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px 2px;}
+  .sessie-card{
+    background:var(--wit);border:1px solid var(--rand);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+    box-shadow:var(--schaduw);
+  }
+  .sessie-info b{font-size:14px;}
+  .sessie-meta{font-size:12.5px;color:var(--tekst-zacht);margin-top:3px;}
+  .sessie-meta span{margin-right:10px;}
+  .sessie-acties{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .voortgang{width:90px;height:6px;background:#eef0f1;border-radius:99px;overflow:hidden;}
+  .voortgang > div{height:100%;background:var(--groen-licht);}
+
+  .bundels-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  @media (max-width:1000px){.bundels-grid{grid-template-columns:repeat(2,1fr);}}
+  .bundel-card{border:1px solid var(--rand);border-radius:var(--radius);padding:18px;background:#fff;display:flex;flex-direction:column;gap:8px;}
+  .bundel-card.actief-bundel{border-color:var(--groen-licht);box-shadow:0 0 0 2px rgba(21,128,61,.15);}
+  .bundel-card .prijs{font-size:24px;font-weight:800;}
+  .bundel-card .prijs small{font-size:12px;font-weight:500;color:var(--tekst-zacht);}
+  .bundel-card p{font-size:12.5px;color:var(--tekst-zacht);margin:0;flex:1;}
+
+  .markt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:1000px){.markt-grid{grid-template-columns:repeat(1,1fr);}}
+  .markt-card{border:1px solid var(--rand);border-radius:var(--radius);padding:16px;background:#fff;}
+  .markt-card .cat{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--tekst-zacht);}
+  .markt-card h4{margin:6px 0 4px 0;font-size:14.5px;}
+  .markt-card .prijs{font-weight:800;color:var(--groen);font-size:15px;}
+
+  .nieuws-item{border-bottom:1px solid var(--rand);padding:14px 0;}
+  .nieuws-item:last-child{border-bottom:none;}
+  .nieuws-item .meta{font-size:11.5px;color:var(--tekst-zacht);margin-bottom:4px;}
+  .nieuws-item h4{margin:0 0 4px 0;font-size:14.5px;}
+  .nieuws-item p{margin:0;font-size:13px;color:#374151;}
+
+  .avatar{
+    width:30px;height:30px;border-radius:8px;background:var(--groen-licht);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;margin-right:8px;
+  }
+  .rij-lid{display:flex;align-items:center;}
+
+  .leeg{padding:30px 10px;text-align:center;color:var(--tekst-zacht);font-size:13px;}
+
+  .instelling-rij{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--rand);}
+  .instelling-rij:last-child{border-bottom:none;}
+  .instelling-rij .label{font-weight:600;font-size:13.5px;}
+  .instelling-rij .uitleg{font-size:12px;color:var(--tekst-zacht);margin-top:2px;max-width:520px;}
+
+  .toggle{position:relative;width:42px;height:24px;flex-shrink:0;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle .slider{position:absolute;inset:0;background:#d1d5db;border-radius:99px;transition:.15s;cursor:pointer;}
+  .toggle .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;}
+  .toggle input:checked + .slider{background:var(--groen-licht);}
+  .toggle input:checked + .slider:before{transform:translateX(18px);}
+
+  /* Dialogs */
+  dialog{border:none;border-radius:14px;padding:0;box-shadow:0 20px 50px rgba(0,0,0,.2);width:440px;max-width:92vw;}
+  dialog::backdrop{background:rgba(15,23,20,.45);}
+  .dialog-hoofd{padding:16px 20px;border-bottom:1px solid var(--rand);display:flex;justify-content:space-between;align-items:center;}
+  .dialog-hoofd h3{margin:0;font-size:15.5px;}
+  .dialog-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;}
+  .dialog-voet{padding:14px 20px;border-top:1px solid var(--rand);display:flex;justify-content:flex-end;gap:8px;}
+  .veld{display:flex;flex-direction:column;gap:5px;}
+  .veld label{font-size:12px;font-weight:600;color:#374151;}
+  .veld input, .veld select, .veld textarea{
+    padding:9px 10px;border:1px solid var(--rand);border-radius:8px;font-size:13.5px;font-family:inherit;background:#fff;
+  }
+  .veld-rij{display:flex;gap:10px;}
+  .veld-rij .veld{flex:1;}
+  .sluit-x{background:transparent;border:none;font-size:18px;color:var(--tekst-zacht);padding:2px 6px;border-radius:6px;}
+  .sluit-x:hover{background:#f3f4f6;}
+
+  /* Toasts */
+  #toast-root{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:100;}
+  .toast{
+    background:#111827;color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;
+    box-shadow:0 10px 25px rgba(0,0,0,.25);max-width:320px;animation:toast-in .15s ease-out;
+  }
+  .toast.toast-succes{background:var(--groen-donker);}
+  .toast.toast-fout{background:#7f1d1d;}
+  @keyframes toast-in{from{transform:translateY(8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+  .leeg-financieel{color:var(--tekst-zacht);font-size:13px;padding:20px;text-align:center;}
+
+  /* Auth-gate */
+  body.niet-ingelogd .sidebar, body.niet-ingelogd main{ display:none; }
+  body:not(.niet-ingelogd) #auth-gate{ display:none; }
+  #auth-gate{
+    min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--groen-donker),#0f2a20);padding:24px;
+  }
+  .auth-kaart{
+    width:380px;max-width:100%;background:var(--wit);border-radius:16px;padding:28px 26px;
+    box-shadow:0 24px 60px rgba(0,0,0,.35);
+  }
+  .auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .auth-logo .logo-badge{
+    width:34px;height:34px;border-radius:9px;background:var(--lime);color:var(--groen-donker);
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
+  }
+  .auth-logo b{font-size:15px;}
+  .auth-logo small{display:block;font-size:11px;color:var(--tekst-zacht);}
+  .auth-tabs{display:flex;gap:4px;background:#f1f2f4;border-radius:9px;padding:3px;margin-bottom:18px;}
+  .auth-tabs button{
+    flex:1;background:transparent;border:none;padding:8px 0;border-radius:7px;font-size:12.5px;font-weight:600;
+    color:var(--tekst-zacht);
+  }
+  .auth-tabs button.actief{background:var(--wit);color:var(--tekst);box-shadow:var(--schaduw);}
+  .auth-form{display:flex;flex-direction:column;gap:12px;}
+  .auth-form.hidden{display:none;}
+  .auth-melding{font-size:12.5px;padding:9px 11px;border-radius:8px;display:none;}
+  .auth-melding.zichtbaar{display:block;}
+  .auth-melding.fout{background:#fef2f2;color:#991b1b;}
+  .auth-melding.succes{background:#f0fdf4;color:#166534;}
+  .auth-link{background:none;border:none;color:var(--groen);font-size:12.5px;font-weight:600;text-align:left;padding:0;}
+  .auth-link:hover{text-decoration:underline;}
+
+  /* Sidebar: echte auth-status */
+  .auth-status{padding:10px 10px 14px 10px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:10px;}
+  .auth-status .naam{font-size:13px;font-weight:700;}
+  .auth-status .sub{font-size:11px;opacity:.65;margin-top:1px;}
+  .auth-status button{margin-top:8px;font-size:11.5px;padding:4px 9px;}
+
+  /* Mijn account (Supabase-view) */
+  .account-hint{font-size:12px;color:var(--tekst-zacht);background:#f4f6f5;border:1px solid var(--rand);border-radius:9px;padding:10px 12px;margin-bottom:16px;}
+  .bestuur-paneel{background:#fef3c7;border:1px solid #fde68a;border-radius:var(--radius);padding:14px 16px;font-size:13px;color:#92400e;margin-top:16px;}
+</style>
+</head>
+<body class="niet-ingelogd">
+
+<!-- AUTH GATE (Supabase) -->
+<div id="auth-gate">
+  <div class="auth-kaart">
+    <div class="auth-logo">
+      <div class="logo-badge">PDH</div>
+      <div><b>Pickleball Den Haag</b><small>Ledenpanel — inloggen</small></div>
+    </div>
+
+    <div class="auth-tabs">
+      <button id="auth-tab-login" class="actief" onclick="wisselAuthTab('login')">Inloggen</button>
+      <button id="auth-tab-registreren" onclick="wisselAuthTab('registreren')">Registreren</button>
+      <button id="auth-tab-vergeten" onclick="wisselAuthTab('vergeten')">Wachtwoord vergeten</button>
+    </div>
+
+    <div id="auth-melding" class="auth-melding"></div>
+
+    <form id="auth-form-login" class="auth-form" onsubmit="handleLogin(event)">
+      <div class="veld"><label>E-mail</label><input type="email" id="login-email" required autocomplete="email"></div>
+      <div class="veld"><label>Wachtwoord</label><input type="password" id="login-wachtwoord" required autocomplete="current-password"></div>
+      <button type="submit" class="btn btn-primary">Inloggen</button>
+    </form>
+
+    <form id="auth-form-registreren" class="auth-form hidden" onsubmit="handleRegistreren(event)">
+      <div class="veld"><label>Naam</label><input type="text" id="registreer-naam" required autocomplete="name"></div>
+      <div class="veld"><label>E-mail</label><input type="email" id="registreer-email" required autocomplete="email"></div>
+      <div class="veld"><label>Wachtwoord</label><input type="password" id="registreer-wachtwoord" minlength="6" required autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-primary">Account aanmaken</button>
+    </form>
+
+    <form id="auth-form-vergeten" class="auth-form hidden" onsubmit="handleWachtwoordVergeten(event)">
+      <p style="font-size:12.5px;color:var(--tekst-zacht);margin:0;">Je krijgt een e-mail met een link om een nieuw wachtwoord in te stellen.</p>
+      <div class="veld"><label>E-mail</label><input type="email" id="vergeten-email" required autocomplete="email"></div>
+      <button type="submit" class="btn btn-primary">Verstuur reset-link</button>
+    </form>
+
+    <form id="auth-form-nieuw-wachtwoord" class="auth-form hidden" onsubmit="handleNieuwWachtwoord(event)">
+      <p style="font-size:12.5px;color:var(--tekst-zacht);margin:0;">Kies een nieuw wachtwoord voor je account.</p>
+      <div class="veld"><label>Nieuw wachtwoord</label><input type="password" id="nieuw-wachtwoord" minlength="6" required autocomplete="new-password"></div>
+      <button type="submit" class="btn btn-primary">Wachtwoord instellen</button>
+    </form>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-badge">PDH</div>
+    <div class="logo-tekst">Pickleball Den Haag<small>Ledenpanel — prototype</small></div>
+  </div>
+
+  <nav class="navlist" id="navlist"></nav>
+
+  <div class="sidebar-onder">
+    <div class="auth-status">
+      <div class="naam" id="auth-status-naam">—</div>
+      <div class="sub" id="auth-status-email">—</div>
+      <button class="btn btn-sm" onclick="handleUitloggen()">Uitloggen</button>
+    </div>
+    <div class="gebruiker-switch">
+      <label for="gebruiker-select">Demo-databron (localStorage, tot Fase 2)</label>
+      <select id="gebruiker-select" onchange="wisselGebruiker(this.value)"></select>
+      <span class="rol-badge" id="rol-badge-huidig"></span>
+    </div>
+  </div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <div>
+      <h1 id="topbar-titel">Dashboard</h1>
+      <p id="topbar-sub">Overzicht van de club</p>
+    </div>
+    <div id="topbar-acties"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view">
+      <div class="grid grid-4" id="dashboard-stats" style="margin-bottom:20px;"></div>
+      <div class="grid grid-2">
+        <div class="paneel">
+          <div class="paneel-hoofd"><h2>Eerstvolgende sessies</h2><button class="btn btn-ghost btn-sm" onclick="navigeer('sessies')">Alles bekijken</button></div>
+          <div class="paneel-body" id="dashboard-sessies"></div>
+        </div>
+        <div class="paneel">
+          <div class="paneel-hoofd"><h2>Laatste nieuws</h2><button class="btn btn-ghost btn-sm" onclick="navigeer('nieuws')">Alles bekijken</button></div>
+          <div class="paneel-body" id="dashboard-nieuws"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MIJN ACCOUNT (Supabase — echte auth, Fase 1) -->
+    <section id="view-account" class="view hidden">
+      <div class="account-hint">Dit is de echte, met Supabase Auth beveiligde account-pagina. De rest van het ledenpanel (Leden, Sessies, Financieel, …) gebruikt in deze fase nog de demo-databron hierboven in de zijbalk — dat wordt pas in Fase 2 omgezet.</div>
+      <div class="paneel">
+        <div class="paneel-hoofd"><h2>Mijn profiel</h2></div>
+        <div class="paneel-body">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+            <span class="badge" id="account-rol-badge">—</span>
+            <span style="font-size:12.5px;color:var(--tekst-zacht);" id="account-organisatie">—</span>
+          </div>
+          <form onsubmit="opslaanAccount(event)" style="display:flex;flex-direction:column;gap:12px;max-width:420px;">
+            <div class="veld-rij">
+              <div class="veld"><label>Naam</label><input type="text" id="account-naam" required></div>
+              <div class="veld"><label>E-mail</label><input type="email" id="account-email" disabled></div>
+            </div>
+            <div class="veld-rij">
+              <div class="veld"><label>Niveau (DUPR-klasse)</label><input type="text" id="account-niveau" placeholder="bijv. 3.5"></div>
+              <div class="veld"><label>Rol</label><input type="text" id="account-rol" disabled></div>
+            </div>
+            <div class="veld-rij">
+              <div class="veld"><label>DUPR ID</label><input type="text" id="account-dupr-id"></div>
+              <div class="veld"><label>DUPR Rating</label><input type="number" step="0.01" id="account-dupr-rating"></div>
+            </div>
+            <div><button type="submit" class="btn btn-primary">Profiel opslaan</button></div>
+          </form>
+          <div id="account-bestuur-paneel" class="bestuur-paneel hidden">
+            Deze sectie is alleen zichtbaar voor <b>bestuur</b> en <b>penningmeester</b> — dat wordt hier bepaald door de rol in de database (via Row Level Security), niet door de demo-schakelaar in de zijbalk. Echt ledenbeheer voor andere leden (rol wijzigen, deactiveren) komt in Fase 2.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEDEN -->
+    <section id="view-leden" class="view hidden">
+      <div class="zoekbalk">
+        <input type="text" id="leden-zoek" placeholder="Zoek op naam of e-mail…" oninput="renderLeden()">
+        <select id="leden-filter-rol" onchange="renderLeden()">
+          <option value="">Alle rollen</option>
+          <option value="lid">Lid</option>
+          <option value="bestuur">Bestuur</option>
+          <option value="penningmeester">Penningmeester</option>
+        </select>
+        <button class="btn" onclick="exportDuprCSV()">Exporteer CSV (DUPR)</button>
+        <button class="btn btn-primary" onclick="openLidDialog()">+ Nieuw lid</button>
+      </div>
+      <div class="paneel">
+        <div class="paneel-body" style="padding:0;">
+          <table>
+            <thead><tr>
+              <th>Lid</th><th>Niveau</th><th>Rating</th><th>Bundel</th><th>Rol</th><th>Status</th><th>DUPR</th><th></th>
+            </tr></thead>
+            <tbody id="leden-tbody"></tbody>
+          </table>
+          <div id="leden-leeg" class="leeg hidden">Geen leden gevonden.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SESSIES -->
+    <section id="view-sessies" class="view hidden">
+      <div class="zoekbalk">
+        <select id="sessies-filter-type" onchange="renderSessies()">
+          <option value="">Alle types</option>
+          <option value="session">Open Play</option>
+          <option value="clinic">Clinic</option>
+          <option value="tournament">Toernooi</option>
+        </select>
+        <select id="sessies-filter-niveau" onchange="renderSessies()">
+          <option value="">Alle niveaus</option>
+        </select>
+        <button class="btn btn-primary" id="btn-nieuwe-sessie" onclick="openSessieDialog()">+ Nieuwe sessie</button>
+      </div>
+      <div id="sessies-lijst"></div>
+    </section>
+
+    <!-- BANEN (optionele module) -->
+    <section id="view-banen" class="view hidden">
+      <div class="zoekbalk">
+        <input type="date" id="banen-datum" onchange="renderBanen()">
+        <select id="banen-locatie" onchange="renderBanen()">
+          <option value="">Alle locaties</option>
+        </select>
+        <button class="btn btn-primary" onclick="openBaanDialog()">+ Baan reserveren</button>
+      </div>
+      <div class="paneel">
+        <div class="paneel-body" style="padding:0;">
+          <table>
+            <thead><tr><th>Datum</th><th>Tijdslot</th><th>Locatie</th><th>Gereserveerd door</th><th></th></tr></thead>
+            <tbody id="banen-tbody"></tbody>
+          </table>
+          <div id="banen-leeg" class="leeg hidden">Geen reserveringen gevonden.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WEDSTRIJDEN -->
+    <section id="view-wedstrijden" class="view hidden">
+      <div class="grid grid-2">
+        <div class="paneel">
+          <div class="paneel-hoofd"><h2>Ranglijst</h2></div>
+          <div class="paneel-body" style="padding:0;">
+            <table>
+              <thead><tr><th>#</th><th>Lid</th><th>Rating</th><th>W / M</th><th>Win%</th></tr></thead>
+              <tbody id="ranglijst-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="paneel">
+          <div class="paneel-hoofd">
+            <h2>Recente wedstrijden</h2>
+            <button class="btn btn-primary btn-sm" onclick="openWedstrijdDialog()">+ Uitslag invoeren</button>
+          </div>
+          <div class="paneel-body" id="wedstrijden-lijst"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MARKTPLAATS -->
+    <section id="view-marktplaats" class="view hidden">
+      <div class="zoekbalk">
+        <input type="text" id="markt-zoek" placeholder="Zoek in de marktplaats…" oninput="renderMarktplaats()">
+        <select id="markt-filter-cat" onchange="renderMarktplaats()">
+          <option value="">Alle categorieën</option>
+          <option value="paddle">Paddle</option>
+          <option value="ball">Ballen</option>
+          <option value="other">Overig</option>
+        </select>
+        <button class="btn btn-primary" onclick="openMarktDialog()">+ Item plaatsen</button>
+      </div>
+      <div class="markt-grid" id="markt-grid"></div>
+      <div id="markt-leeg" class="leeg hidden">Nog geen items te koop.</div>
+    </section>
+
+    <!-- NIEUWS -->
+    <section id="view-nieuws" class="view hidden">
+      <div class="paneel">
+        <div class="paneel-hoofd">
+          <h2>Nieuwsberichten</h2>
+          <button class="btn btn-primary btn-sm" onclick="openNieuwsDialog()">+ Bericht plaatsen</button>
+        </div>
+        <div class="paneel-body" id="nieuws-lijst"></div>
+      </div>
+    </section>
+
+    <!-- CONTRIBUTIE -->
+    <section id="view-contributie" class="view hidden">
+      <div class="paneel" style="margin-bottom:20px;">
+        <div class="paneel-hoofd"><h2>Kies je bundel</h2></div>
+        <div class="paneel-body">
+          <div class="bundels-grid" id="bundels-grid"></div>
+        </div>
+      </div>
+      <div class="paneel">
+        <div class="paneel-hoofd"><h2>Mijn betaalgeschiedenis</h2></div>
+        <div class="paneel-body" style="padding:0;">
+          <table>
+            <thead><tr><th>Datum</th><th>Bundel</th><th>Bedrag</th><th>Methode</th><th>Status</th></tr></thead>
+            <tbody id="mijn-betalingen-tbody"></tbody>
+          </table>
+          <div id="mijn-betalingen-leeg" class="leeg hidden">Nog geen betalingen.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINANCIEEL -->
+    <section id="view-financieel" class="view hidden">
+      <div class="grid grid-3" id="financieel-stats" style="margin-bottom:20px;"></div>
+      <div class="paneel">
+        <div class="paneel-hoofd"><h2>Alle betalingen</h2></div>
+        <div class="paneel-body" style="padding:0;">
+          <table>
+            <thead><tr><th>Datum</th><th>Lid</th><th>Bundel</th><th>Bedrag</th><th>Methode</th><th>Mollie-ref</th><th>Status</th></tr></thead>
+            <tbody id="financieel-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTELLINGEN -->
+    <section id="view-instellingen" class="view hidden">
+      <div class="paneel">
+        <div class="paneel-hoofd"><h2>Organisatie-instellingen</h2></div>
+        <div class="paneel-body">
+          <div class="instelling-rij">
+            <div>
+              <div class="label">Baanreservering-module</div>
+              <div class="uitleg">Optionele module — alleen aanzetten voor organisaties waar leden zelf een specifieke baan/tijdslot claimen (bijv. sportcentra met baanverhuur). Pickleball Den Haag gebruikt een vast rooster per niveau-klasse en heeft dit niet nodig.</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-baanreservering" onchange="toggleBaanreservering(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="instelling-rij">
+            <div>
+              <div class="label">Demo-data terugzetten</div>
+              <div class="uitleg">Wist alle lokale wijzigingen en herstelt de oorspronkelijke demo-dataset (localStorage).</div>
+            </div>
+            <button class="btn btn-outline-danger btn-sm" onclick="resetDemoData()">Reset demo-data</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Dialoog: Lid toevoegen/bewerken -->
+<dialog id="dialog-lid">
+  <form method="dialog" onsubmit="opslaanLid(event)">
+    <div class="dialog-hoofd"><h3 id="dialog-lid-titel">Nieuw lid</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-lid')">✕</button></div>
+    <div class="dialog-body">
+      <input type="hidden" id="lid-id">
+      <div class="veld"><label>Naam</label><input type="text" id="lid-naam" required></div>
+      <div class="veld"><label>E-mail</label><input type="email" id="lid-email" required></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Niveau (DUPR-klasse)</label><input type="text" id="lid-niveau" placeholder="bijv. 3.5"></div>
+        <div class="veld"><label>Rol</label>
+          <select id="lid-rol">
+            <option value="lid">Lid</option>
+            <option value="bestuur">Bestuur</option>
+            <option value="penningmeester">Penningmeester</option>
+          </select>
+        </div>
+      </div>
+      <div class="veld-rij">
+        <div class="veld"><label>DUPR ID</label><input type="text" id="lid-dupr-id"></div>
+        <div class="veld"><label>DUPR Rating</label><input type="number" step="0.01" id="lid-dupr-rating"></div>
+      </div>
+      <div class="veld"><label>Status</label>
+        <select id="lid-actief">
+          <option value="true">Actief</option>
+          <option value="false">Inactief</option>
+        </select>
+      </div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-lid')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Opslaan</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Sessie toevoegen -->
+<dialog id="dialog-sessie">
+  <form method="dialog" onsubmit="addSessie(event)">
+    <div class="dialog-hoofd"><h3>Nieuwe sessie</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-sessie')">✕</button></div>
+    <div class="dialog-body">
+      <div class="veld"><label>Titel</label><input type="text" id="sessie-titel" placeholder="bijv. Open Play 3.5+" required></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Type</label>
+          <select id="sessie-type">
+            <option value="session">Open Play</option>
+            <option value="clinic">Clinic</option>
+            <option value="tournament">Toernooi</option>
+          </select>
+        </div>
+        <div class="veld"><label>Niveau</label><input type="text" id="sessie-niveau" placeholder="bijv. 3.0-3.5"></div>
+      </div>
+      <div class="veld-rij">
+        <div class="veld"><label>Dag</label>
+          <select id="sessie-dag">
+            <option>Maandag</option><option>Dinsdag</option><option>Woensdag</option>
+            <option>Donderdag</option><option>Vrijdag</option><option>Zaterdag</option><option>Zondag</option>
+          </select>
+        </div>
+        <div class="veld"><label>Max. spelers</label><input type="number" id="sessie-max" value="16" min="2" required></div>
+      </div>
+      <div class="veld-rij">
+        <div class="veld"><label>Starttijd</label><input type="time" id="sessie-start" value="19:00" required></div>
+        <div class="veld"><label>Eindtijd</label><input type="time" id="sessie-eind" value="21:00" required></div>
+      </div>
+      <div class="veld"><label>Locatie</label>
+        <select id="sessie-locatie"></select>
+      </div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-sessie')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Sessie aanmaken</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Baan reserveren -->
+<dialog id="dialog-baan">
+  <form method="dialog" onsubmit="addBaanreservering(event)">
+    <div class="dialog-hoofd"><h3>Baan reserveren</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-baan')">✕</button></div>
+    <div class="dialog-body">
+      <div class="veld"><label>Locatie</label><select id="baan-locatie-input"></select></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Datum</label><input type="date" id="baan-datum-input" required></div>
+        <div class="veld"><label>Tijdslot</label>
+          <select id="baan-tijdslot-input">
+            <option>08:00 - 09:00</option><option>09:00 - 10:00</option><option>10:00 - 11:00</option>
+            <option>17:00 - 18:00</option><option>18:00 - 19:00</option><option>19:00 - 20:00</option><option>20:00 - 21:00</option>
+          </select>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--tekst-zacht);margin:0;">Een tijdslot kan maar door één lid tegelijk geclaimd worden — dit wordt straks op databaseniveau afgedwongen (unique constraint), niet alleen in deze UI.</p>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-baan')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Reserveren</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Wedstrijduitslag -->
+<dialog id="dialog-wedstrijd">
+  <form method="dialog" onsubmit="addWedstrijd(event)">
+    <div class="dialog-hoofd"><h3>Uitslag invoeren</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-wedstrijd')">✕</button></div>
+    <div class="dialog-body">
+      <div class="veld"><label>Team A — speler 1</label><select id="wed-a1"></select></div>
+      <div class="veld"><label>Team A — speler 2</label><select id="wed-a2"></select></div>
+      <div class="veld"><label>Team B — speler 1</label><select id="wed-b1"></select></div>
+      <div class="veld"><label>Team B — speler 2</label><select id="wed-b2"></select></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Score Team A</label><input type="number" id="wed-score-a" min="0" required></div>
+        <div class="veld"><label>Score Team B</label><input type="number" id="wed-score-b" min="0" required></div>
+      </div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-wedstrijd')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Opslaan &amp; rating bijwerken</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Marktplaats item -->
+<dialog id="dialog-markt">
+  <form method="dialog" onsubmit="addMarktItem(event)">
+    <div class="dialog-hoofd"><h3>Item plaatsen</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-markt')">✕</button></div>
+    <div class="dialog-body">
+      <div class="veld"><label>Titel</label><input type="text" id="markt-titel" required></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Prijs (€)</label><input type="number" step="0.01" id="markt-prijs" required></div>
+        <div class="veld"><label>Categorie</label>
+          <select id="markt-categorie">
+            <option value="paddle">Paddle</option>
+            <option value="ball">Ballen</option>
+            <option value="other">Overig</option>
+          </select>
+        </div>
+      </div>
+      <div class="veld"><label>Omschrijving</label><textarea id="markt-omschrijving" rows="3"></textarea></div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-markt')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Plaatsen</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Nieuwsbericht -->
+<dialog id="dialog-nieuws">
+  <form method="dialog" onsubmit="addNieuws(event)">
+    <div class="dialog-hoofd"><h3>Nieuwsbericht plaatsen</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-nieuws')">✕</button></div>
+    <div class="dialog-body">
+      <div class="veld"><label>Titel</label><input type="text" id="nieuws-titel" required></div>
+      <div class="veld"><label>Categorie</label>
+        <select id="nieuws-categorie">
+          <option value="Clubnieuws">Clubnieuws</option>
+          <option value="Toernooi">Toernooi</option>
+          <option value="Onderhoud">Onderhoud</option>
+        </select>
+      </div>
+      <div class="veld"><label>Bericht</label><textarea id="nieuws-body" rows="4" required></textarea></div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn" onclick="dichtDialog('dialog-nieuws')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Plaatsen</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast-root"></div>
+
+<script src="supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ============================================================
+   Pickleball Den Haag — Ledenpanel (prototype)
+   Data zit volledig in localStorage. Veldnamen volgen bewust
+   het schema uit bouwplan.md, zodat de omzetting naar Supabase
+   in een latere fase grotendeels 1-op-1 kan (zelfde functies,
+   arrays worden queries).
+   ============================================================ */
+
+/* ============================================================
+   FASE 1 — Supabase Auth ("Mijn account"). Dit is de enige plek
+   die echt met de database praat; de rest van dit bestand
+   (hieronder) blijft ongewijzigd op localStorage tot Fase 2.
+   ============================================================ */
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const AUTH_TABS = ['login', 'registreren', 'vergeten'];
+
+let authGebruiker = null;   // Supabase auth.users-object
+let mijnLid = null;         // eigen rij uit de `leden`-tabel
+let mijnOrganisatieNaam = '';
+let wachtwoordHerstelModus = false;
+
+function toonApp(){ document.body.classList.remove('niet-ingelogd'); }
+function toonAuthGate(){ document.body.classList.add('niet-ingelogd'); }
+
+function wisselAuthTab(tab){
+  verbergAuthMelding();
+  AUTH_TABS.forEach(t => {
+    document.getElementById('auth-tab-' + t).classList.toggle('actief', t === tab);
+    document.getElementById('auth-form-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.getElementById('auth-form-nieuw-wachtwoord').classList.add('hidden');
+}
+
+function toonAuthMelding(tekst, type){
+  const el = document.getElementById('auth-melding');
+  el.textContent = tekst;
+  el.className = 'auth-melding zichtbaar ' + type;
+}
+
+function verbergAuthMelding(){
+  document.getElementById('auth-melding').className = 'auth-melding';
+}
+
+function vertaalAuthFout(error){
+  const m = (error && error.message) || '';
+  if(m.includes('Invalid login credentials')) return 'E-mail of wachtwoord onjuist.';
+  if(m.includes('User already registered')) return 'Er bestaat al een account met dit e-mailadres.';
+  if(m.toLowerCase().includes('password should be at least')) return 'Wachtwoord moet minstens 6 tekens zijn.';
+  if(m.includes('Email not confirmed')) return 'Bevestig eerst je e-mailadres via de link die je hebt ontvangen.';
+  return m || 'Er ging iets mis, probeer het opnieuw.';
+}
+
+async function handleLogin(e){
+  e.preventDefault();
+  verbergAuthMelding();
+  const email = document.getElementById('login-email').value.trim();
+  const wachtwoord = document.getElementById('login-wachtwoord').value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: wachtwoord });
+  if(error) toonAuthMelding(vertaalAuthFout(error), 'fout');
+}
+
+async function handleRegistreren(e){
+  e.preventDefault();
+  verbergAuthMelding();
+  const naam = document.getElementById('registreer-naam').value.trim();
+  const email = document.getElementById('registreer-email').value.trim();
+  const wachtwoord = document.getElementById('registreer-wachtwoord').value;
+  const { data, error } = await supabaseClient.auth.signUp({
+    email, password: wachtwoord, options: { data: { naam } }
+  });
+  if(error){ toonAuthMelding(vertaalAuthFout(error), 'fout'); return; }
+  if(!data.session){
+    wisselAuthTab('login');
+    toonAuthMelding('Account aangemaakt. Check je e-mail om te bevestigen, log daarna in.', 'succes');
+  }
+}
+
+async function handleWachtwoordVergeten(e){
+  e.preventDefault();
+  verbergAuthMelding();
+  const email = document.getElementById('vergeten-email').value.trim();
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href.split('#')[0],
+  });
+  if(error){ toonAuthMelding(vertaalAuthFout(error), 'fout'); return; }
+  toonAuthMelding('Check je e-mail voor de reset-link.', 'succes');
+}
+
+async function handleNieuwWachtwoord(e){
+  e.preventDefault();
+  verbergAuthMelding();
+  const wachtwoord = document.getElementById('nieuw-wachtwoord').value;
+  const { error } = await supabaseClient.auth.updateUser({ password: wachtwoord });
+  if(error){ toonAuthMelding(vertaalAuthFout(error), 'fout'); return; }
+  wachtwoordHerstelModus = false;
+  await opnieuwLadenNaAuth();
+  toast('Wachtwoord ingesteld, je bent ingelogd.', 'succes');
+}
+
+async function handleUitloggen(){
+  await supabaseClient.auth.signOut();
+}
+
+async function ensureLidRow(user){
+  const { data: bestaand, error: zoekFout } = await supabaseClient
+    .from('leden').select('*').eq('id', user.id).maybeSingle();
+  if(zoekFout){ console.error(zoekFout); return null; }
+  if(bestaand) return bestaand;
+
+  // Insert en het teruglezen bewust in twee losse round-trips: de SELECT-
+  // policy op 'leden' verwijst (via eigen_organisatie_id()) naar leden zelf,
+  // en die zelfreferentie ziet de zojuist ingevoegde rij niet betrouwbaar
+  // binnen dezelfde INSERT ... RETURNING-statement (bevestigd via testen
+  // tegen de live database — een bekende RLS/Postgres-valkuil).
+  const naam = (user.user_metadata && user.user_metadata.naam) || user.email;
+  const { error: insertFout } = await supabaseClient
+    .from('leden')
+    .insert({ id: user.id, organisatie_id: ORGANISATIE_ID, naam, email: user.email, rol: 'lid' });
+  if(insertFout){ console.error(insertFout); return null; }
+
+  const { data: nieuw, error: herhaalFout } = await supabaseClient
+    .from('leden').select('*').eq('id', user.id).maybeSingle();
+  if(herhaalFout){ console.error(herhaalFout); return null; }
+  return nieuw;
+}
+
+async function laadMijnOrganisatie(){
+  if(!mijnLid){ mijnOrganisatieNaam = ''; return; }
+  const { data, error } = await supabaseClient
+    .from('organisaties').select('naam').eq('id', mijnLid.organisatie_id).maybeSingle();
+  if(!error && data) mijnOrganisatieNaam = data.naam;
+}
+
+async function opnieuwLadenNaAuth(){
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  authGebruiker = user;
+  mijnLid = user ? await ensureLidRow(user) : null;
+  await laadMijnOrganisatie();
+  bijwerkenAuthStatus();
+  renderAccount();
+  toonApp();
+}
+
+function bijwerkenAuthStatus(){
+  const naamEl = document.getElementById('auth-status-naam');
+  if(!naamEl) return;
+  if(mijnLid){
+    naamEl.textContent = mijnLid.naam;
+    document.getElementById('auth-status-email').textContent = mijnLid.email + ' · ' + rolBadgeLabel(mijnLid.rol);
+  } else {
+    naamEl.textContent = '—';
+    document.getElementById('auth-status-email').textContent = '—';
+  }
+}
+
+function renderAccount(){
+  const veld = document.getElementById('account-naam');
+  if(!veld) return;
+  if(!mijnLid) return;
+  document.getElementById('account-naam').value = mijnLid.naam || '';
+  document.getElementById('account-email').value = mijnLid.email || '';
+  document.getElementById('account-niveau').value = mijnLid.niveau || '';
+  document.getElementById('account-rol').value = rolBadgeLabel(mijnLid.rol);
+  document.getElementById('account-dupr-id').value = mijnLid.dupr_id || '';
+  document.getElementById('account-dupr-rating').value = mijnLid.dupr_rating || '';
+  const badge = document.getElementById('account-rol-badge');
+  badge.textContent = rolBadgeLabel(mijnLid.rol);
+  badge.className = 'badge badge-' + mijnLid.rol;
+  document.getElementById('account-organisatie').textContent = mijnOrganisatieNaam;
+  document.getElementById('account-bestuur-paneel').classList.toggle(
+    'hidden', !(mijnLid.rol === 'bestuur' || mijnLid.rol === 'penningmeester')
+  );
+}
+
+async function opslaanAccount(e){
+  e.preventDefault();
+  if(!mijnLid) return;
+  const updates = {
+    naam: document.getElementById('account-naam').value.trim(),
+    niveau: document.getElementById('account-niveau').value.trim() || null,
+    dupr_id: document.getElementById('account-dupr-id').value.trim() || null,
+    dupr_rating: document.getElementById('account-dupr-rating').value
+      ? parseFloat(document.getElementById('account-dupr-rating').value) : null,
+  };
+  const { data, error } = await supabaseClient
+    .from('leden').update(updates).eq('id', mijnLid.id).select().single();
+  if(error){ toast('Opslaan mislukt: ' + error.message, 'fout'); return; }
+  mijnLid = data;
+  renderAccount();
+  bijwerkenAuthStatus();
+  toast('Profiel opgeslagen in Supabase.', 'succes');
+}
+
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  if(event === 'PASSWORD_RECOVERY'){
+    wachtwoordHerstelModus = true;
+    toonAuthGate();
+    AUTH_TABS.forEach(t => document.getElementById('auth-form-' + t).classList.add('hidden'));
+    document.getElementById('auth-form-nieuw-wachtwoord').classList.remove('hidden');
+    return;
+  }
+  if(wachtwoordHerstelModus) return;
+
+  if(event === 'SIGNED_OUT' || !session){
+    mijnLid = null; authGebruiker = null;
+    bijwerkenAuthStatus();
+    toonAuthGate();
+    wisselAuthTab('login');
+    return;
+  }
+  await opnieuwLadenNaAuth();
+});
+
+/* ============================================================
+   Vanaf hier: het bestaande prototype, ongewijzigd op localStorage.
+   ============================================================ */
+
+const STORAGE_KEY = 'pdh_ledenpanel_state_v1';
+const LOCATIES = ['Sportcampus Zuiderpark', 'Pickleplex Houtrust', 'HSV Wassenaar'];
+
+function uid(prefix){
+  return prefix + '_' + Math.random().toString(36).slice(2, 10);
+}
+
+function seedData(){
+  const leden = [
+    { id:'lid_1', naam:'Sanne de Vries', email:'sanne@example.com', niveau:'4.0', rating:1420, wins:18, matches:24, bundelId:'quarterly', gespeeld:6, actief:true, rol:'penningmeester', duprId:'DUPR-10234', duprRating:4.05 },
+    { id:'lid_2', naam:'Tom Bakker', email:'tom@example.com', niveau:'3.5', rating:1310, wins:11, matches:20, bundelId:'bundle10', gespeeld:4, actief:true, rol:'bestuur', duprId:'DUPR-10235', duprRating:3.6 },
+    { id:'lid_3', naam:'Fenna Willems', email:'fenna@example.com', niveau:'3.0', rating:1180, wins:6, matches:15, bundelId:'starter', gespeeld:2, actief:true, rol:'lid', duprId:'', duprRating:null },
+    { id:'lid_4', naam:'Daan Jansen', email:'daan@example.com', niveau:'3.5', rating:1265, wins:9, matches:17, bundelId:'quarterly', gespeeld:9, actief:true, rol:'lid', duprId:'DUPR-10238', duprRating:3.55 },
+    { id:'lid_5', naam:'Lotte Visser', email:'lotte@example.com', niveau:'2.5', rating:1050, wins:3, matches:9, bundelId:'incidenteel', gespeeld:1, actief:true, rol:'lid', duprId:'', duprRating:null },
+    { id:'lid_6', naam:'Milan de Groot', email:'milan@example.com', niveau:'4.0+', rating:1510, wins:22, matches:27, bundelId:'quarterly', gespeeld:11, actief:true, rol:'lid', duprId:'DUPR-10240', duprRating:4.2 },
+    { id:'lid_7', naam:'Iris Mulder', email:'iris@example.com', niveau:'3.0', rating:1140, wins:5, matches:13, bundelId:'bundle10', gespeeld:5, actief:false, rol:'lid', duprId:'', duprRating:null },
+    { id:'lid_8', naam:'Bram Peters', email:'bram@example.com', niveau:'3.5', rating:1295, wins:10, matches:19, bundelId:'starter', gespeeld:3, actief:true, rol:'lid', duprId:'DUPR-10244', duprRating:3.48 },
+  ];
+
+  const bundels = [
+    { id:'starter', naam:'Starter', prijs:15, omschrijving:'Instapbundel voor nieuwe leden.', speelbeurten:4, geldigheid:'1 maand' },
+    { id:'bundle10', naam:'10-rittenkaart', prijs:60, omschrijving:'10 speelbeurten, te gebruiken binnen 3 maanden.', speelbeurten:10, geldigheid:'3 maanden' },
+    { id:'quarterly', naam:'Kwartaal onbeperkt', prijs:90, omschrijving:'Onbeperkt spelen gedurende een heel kwartaal.', speelbeurten:999, geldigheid:'3 maanden' },
+    { id:'incidenteel', naam:'Losse sessie', prijs:6, omschrijving:'Eenmalig meespelen, per keer afrekenen.', speelbeurten:1, geldigheid:'1 sessie' },
+  ];
+
+  const sessies = [
+    { id:'ses_1', titel:'Open Play 2.5-3.0', type:'session', dag:'Maandag', startTijd:'19:00', eindTijd:'21:00', locatie:'Sportcampus Zuiderpark', niveau:'2.5-3.0', maxSpelers:16 },
+    { id:'ses_2', titel:'Open Play 3.0-3.5', type:'session', dag:'Dinsdag', startTijd:'19:00', eindTijd:'21:00', locatie:'Pickleplex Houtrust', niveau:'3.0-3.5', maxSpelers:16 },
+    { id:'ses_3', titel:'Clinic: opslag & return', type:'clinic', dag:'Woensdag', startTijd:'18:30', eindTijd:'20:00', locatie:'HSV Wassenaar', niveau:'Alle niveaus', maxSpelers:12 },
+    { id:'ses_4', titel:'Open Play 3.5-4.0+', type:'session', dag:'Donderdag', startTijd:'19:30', eindTijd:'21:30', locatie:'Sportcampus Zuiderpark', niveau:'3.5-4.0+', maxSpelers:16 },
+    { id:'ses_5', titel:'Voorjaarstoernooi', type:'tournament', dag:'Zaterdag', startTijd:'10:00', eindTijd:'17:00', locatie:'Pickleplex Houtrust', niveau:'Alle niveaus', maxSpelers:32 },
+  ];
+
+  const sessieDeelnemers = [
+    { sessieId:'ses_1', lidId:'lid_3', status:'deelnemer' },
+    { sessieId:'ses_1', lidId:'lid_5', status:'deelnemer' },
+    { sessieId:'ses_2', lidId:'lid_2', status:'deelnemer' },
+    { sessieId:'ses_2', lidId:'lid_4', status:'deelnemer' },
+    { sessieId:'ses_2', lidId:'lid_8', status:'deelnemer' },
+    { sessieId:'ses_4', lidId:'lid_1', status:'deelnemer' },
+    { sessieId:'ses_4', lidId:'lid_6', status:'deelnemer' },
+  ];
+
+  const baanreserveringen = [];
+
+  const wedstrijden = [
+    { id:'wed_1', teamA:['lid_1','lid_6'], teamB:['lid_2','lid_4'], scoreA:11, scoreB:7, gespeeldOp:'2026-07-08' },
+    { id:'wed_2', teamA:['lid_3','lid_5'], teamB:['lid_8','lid_7'], scoreA:9, scoreB:11, gespeeldOp:'2026-07-10' },
+  ];
+
+  const marktItems = [
+    { id:'markt_1', titel:'Selkirk Vanguard Power Air', prijs:145, categorie:'paddle', omschrijving:'Amper gebruikt, incl. hoes.', verkoperId:'lid_2', createdAt:'2026-07-01T10:00:00.000Z' },
+    { id:'markt_2', titel:'12x outdoor ballen (Franklin X-40)', prijs:25, categorie:'ball', omschrijving:'Ongeopende doos.', verkoperId:'lid_6', createdAt:'2026-07-05T10:00:00.000Z' },
+  ];
+
+  const nieuwsberichten = [
+    { id:'nieuws_1', titel:'Voorjaarstoernooi op 25 juli — inschrijving open', body:'Schrijf je in via de Sessies-pagina. Beperkt aantal plekken per niveau-klasse.', categorie:'Toernooi', createdAt:'2026-07-11T09:00:00.000Z' },
+    { id:'nieuws_2', titel:'Onderhoud banen Sportcampus Zuiderpark', body:'Baan 3 en 4 zijn t/m vrijdag afgesloten wegens resurfacing.', categorie:'Onderhoud', createdAt:'2026-07-09T09:00:00.000Z' },
+    { id:'nieuws_3', titel:'Nieuwe clinic: opslag & return', body:'Elke woensdag vanaf deze maand, aanmelden via Sessies.', categorie:'Clubnieuws', createdAt:'2026-07-03T09:00:00.000Z' },
+  ];
+
+  const betalingen = [
+    { id:'bet_1', lidId:'lid_1', bundelId:'quarterly', bedrag:90, methode:'ideal', molliePaymentId:'demo_mock001', status:'betaald', aangemaaktOp:'2026-06-01T10:00:00.000Z' },
+    { id:'bet_2', lidId:'lid_2', bundelId:'bundle10', bedrag:60, methode:'ideal', molliePaymentId:'demo_mock002', status:'betaald', aangemaaktOp:'2026-06-03T10:00:00.000Z' },
+    { id:'bet_3', lidId:'lid_4', bundelId:'quarterly', bedrag:90, methode:'tikkie', molliePaymentId:'demo_mock003', status:'betaald', aangemaaktOp:'2026-06-05T10:00:00.000Z' },
+    { id:'bet_4', lidId:'lid_6', bundelId:'quarterly', bedrag:90, methode:'ideal', molliePaymentId:'demo_mock004', status:'betaald', aangemaaktOp:'2026-06-10T10:00:00.000Z' },
+    { id:'bet_5', lidId:'lid_8', bundelId:'starter', bedrag:15, methode:'card', molliePaymentId:'demo_mock005', status:'betaald', aangemaaktOp:'2026-06-20T10:00:00.000Z' },
+  ];
+
+  return {
+    organisatie: { id:'org_1', naam:'Pickleball Den Haag', baanreserveringActief:false },
+    huidigeGebruikerId: 'lid_2',
+    huidigeView: 'dashboard',
+    leden, bundels, sessies, sessieDeelnemers, baanreserveringen, wedstrijden, marktItems, nieuwsberichten, betalingen,
+  };
+}
+
+function laadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{ return JSON.parse(raw); } catch(e){ /* val terug op seed */ }
+  }
+  const seed = seedData();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+  return seed;
+}
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = laadState();
+
+function resetDemoData(){
+  if(!confirm('Weet je zeker dat je alle lokale wijzigingen wilt wissen en de demo-data wilt herstellen?')) return;
+  state = seedData();
+  save();
+  renderAlles();
+  toast('Demo-data hersteld.', 'succes');
+}
+
+/* ---------- helpers ---------- */
+function huidigLid(){ return state.leden.find(l => l.id === state.huidigeGebruikerId); }
+function magFinancieelZien(){ const l = huidigLid(); return !!l && (l.rol === 'bestuur' || l.rol === 'penningmeester'); }
+function lidNaam(lidId){ const l = state.leden.find(l => l.id === lidId); return l ? l.naam : 'Onbekend lid'; }
+function bundelNaam(bundelId){ const b = state.bundels.find(b => b.id === bundelId); return b ? b.naam : '—'; }
+function initialen(naam){ return naam.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function euro(n){ return '€ ' + Number(n).toFixed(2).replace('.', ','); }
+function datumNL(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('nl-NL', { day:'2-digit', month:'short', year:'numeric' });
+}
+function rolBadgeLabel(rol){ return rol === 'bestuur' ? 'Bestuur' : rol === 'penningmeester' ? 'Penningmeester' : 'Lid'; }
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(bericht, type='info'){
+  const root = document.getElementById('toast-root');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'succes' ? ' toast-succes' : type === 'fout' ? ' toast-fout' : '');
+  el.textContent = bericht;
+  root.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+function dichtDialog(id){ document.getElementById(id).close(); }
+
+/* ---------- navigatie ---------- */
+const NAV_ITEMS = [
+  { view:'dashboard', label:'Dashboard', icon:'▤' },
+  { view:'account', label:'Mijn account', icon:'◆' },
+  { view:'leden', label:'Leden', icon:'●' },
+  { view:'sessies', label:'Sessies', icon:'◷' },
+  { view:'banen', label:'Banen', icon:'▦', moduleAfhankelijk:true },
+  { view:'wedstrijden', label:'Wedstrijden', icon:'★' },
+  { view:'marktplaats', label:'Marktplaats', icon:'▲' },
+  { view:'nieuws', label:'Nieuws', icon:'✉' },
+  { view:'contributie', label:'Contributie', icon:'▣' },
+  { view:'financieel', label:'Financieel beheer', icon:'▥', vergrendeld:true },
+  { view:'instellingen', label:'Instellingen', icon:'⚙' },
+];
+
+const PAGINA_TITELS = {
+  dashboard:['Dashboard','Overzicht van de club'],
+  account:['Mijn account','Echt account (Supabase Auth) — los van de demo-databron'],
+  leden:['Leden','Beheer ledenlijst, rollen en DUPR-koppeling'],
+  sessies:['Sessies','Open Play, clinics en toernooien'],
+  banen:['Banen','Baanreservering per locatie en tijdslot'],
+  wedstrijden:['Wedstrijden','Uitslagen en ELO-ranglijst'],
+  marktplaats:['Marktplaats','Tweedehands materiaal tussen leden'],
+  nieuws:['Nieuws','Berichten van de club'],
+  contributie:['Contributie','Kies je bundel en bekijk je betalingen'],
+  financieel:['Financieel beheer','Alleen zichtbaar voor bestuur en penningmeester'],
+  instellingen:['Instellingen','Organisatie-instellingen en module-schakelaars'],
+};
+
+function navigeer(view){
+  state.huidigeView = view;
+  save();
+  renderAlles();
+}
+
+function renderNav(){
+  const nav = document.getElementById('navlist');
+  nav.innerHTML = '';
+  NAV_ITEMS.forEach(item => {
+    if(item.moduleAfhankelijk && !state.organisatie.baanreserveringActief) return;
+    if(item.vergrendeld && !magFinancieelZien()) return;
+    const btn = document.createElement('button');
+    btn.className = item.view === state.huidigeView ? 'actief' : '';
+    btn.innerHTML = `<span class="navicon">${item.icon}</span> ${item.label}`;
+    btn.onclick = () => navigeer(item.view);
+    nav.appendChild(btn);
+  });
+
+  if(state.huidigeView === 'financieel' && !magFinancieelZien()) navigeer('dashboard');
+  if(state.huidigeView === 'banen' && !state.organisatie.baanreserveringActief) navigeer('dashboard');
+}
+
+function renderTopbar(){
+  const [titel, sub] = PAGINA_TITELS[state.huidigeView] || ['',''];
+  document.getElementById('topbar-titel').textContent = titel;
+  document.getElementById('topbar-sub').textContent = sub;
+}
+
+function toonActieveView(){
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+  const el = document.getElementById('view-' + state.huidigeView);
+  if(el) el.classList.remove('hidden');
+}
+
+function renderGebruikerSwitch(){
+  const sel = document.getElementById('gebruiker-select');
+  sel.innerHTML = state.leden.map(l => `<option value="${l.id}" ${l.id === state.huidigeGebruikerId ? 'selected' : ''}>${escapeHtml(l.naam)} (${rolBadgeLabel(l.rol)})</option>`).join('');
+  const lid = huidigLid();
+  const badge = document.getElementById('rol-badge-huidig');
+  badge.textContent = lid ? rolBadgeLabel(lid.rol) : '';
+}
+
+function wisselGebruiker(lidId){
+  state.huidigeGebruikerId = lidId;
+  save();
+  renderAlles();
+  toast('Ingelogd als ' + lidNaam(lidId) + ' (demo).');
+}
+
+function renderAlles(){
+  renderNav();
+  renderTopbar();
+  toonActieveView();
+  renderGebruikerSwitch();
+  renderDashboard();
+  renderAccount();
+  renderLeden();
+  renderSessies();
+  renderBanen();
+  renderWedstrijden();
+  renderMarktplaats();
+  renderNieuws();
+  renderContributie();
+  renderFinancieel();
+  renderInstellingen();
+  vulSelecties();
+}
+
+/* ---------- selecten die overal gebruikt worden ---------- */
+function vulSelecties(){
+  document.querySelectorAll('#sessie-locatie, #baan-locatie-input').forEach(sel => {
+    sel.innerHTML = LOCATIES.map(l => `<option>${l}</option>`).join('');
+  });
+  const banenLocatieFilter = document.getElementById('banen-locatie');
+  banenLocatieFilter.innerHTML = '<option value="">Alle locaties</option>' + LOCATIES.map(l => `<option>${l}</option>`).join('');
+
+  const niveaus = [...new Set(state.sessies.map(s => s.niveau))];
+  document.getElementById('sessies-filter-niveau').innerHTML = '<option value="">Alle niveaus</option>' + niveaus.map(n => `<option>${escapeHtml(n)}</option>`).join('');
+
+  const spelerOpties = state.leden.filter(l => l.actief).map(l => `<option value="${l.id}">${escapeHtml(l.naam)}</option>`).join('');
+  ['wed-a1','wed-a2','wed-b1','wed-b2'].forEach(id => { document.getElementById(id).innerHTML = spelerOpties; });
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  const el = document.getElementById('dashboard-stats');
+  if(!el) return;
+  const actieveLeden = state.leden.filter(l => l.actief).length;
+  const opkomendeSessies = state.sessies.length;
+  const openItems = state.marktItems.length;
+  const inkomstenMaand = state.betalingen.filter(b => b.status === 'betaald').reduce((s,b) => s + b.bedrag, 0);
+
+  el.innerHTML = `
+    <div class="card"><h3>Actieve leden</h3><div class="stat">${actieveLeden}</div></div>
+    <div class="card"><h3>Sessies op rooster</h3><div class="stat">${opkomendeSessies}</div></div>
+    <div class="card"><h3>Marktplaats-items</h3><div class="stat">${openItems}</div></div>
+    ${magFinancieelZien() ? `<div class="card"><h3>Totale inkomsten</h3><div class="stat">${euro(inkomstenMaand)}</div></div>` : `<div class="card"><h3>Mijn rating</h3><div class="stat">${huidigLid()?.rating ?? '—'}</div></div>`}
+  `;
+
+  const sessiesEl = document.getElementById('dashboard-sessies');
+  sessiesEl.innerHTML = state.sessies.slice(0,4).map(s => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--rand);">
+      <b style="font-size:13.5px;">${escapeHtml(s.titel)}</b>
+      <div class="sessie-meta">${s.dag} ${s.startTijd}–${s.eindTijd} · ${escapeHtml(s.locatie)}</div>
+    </div>`).join('') || '<div class="leeg">Nog geen sessies.</div>';
+
+  const nieuwsEl = document.getElementById('dashboard-nieuws');
+  const laatsteNieuws = [...state.nieuwsberichten].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0,3);
+  nieuwsEl.innerHTML = laatsteNieuws.map(n => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--rand);">
+      <b style="font-size:13.5px;">${escapeHtml(n.titel)}</b>
+      <div class="sessie-meta">${datumNL(n.createdAt)} · ${escapeHtml(n.categorie)}</div>
+    </div>`).join('') || '<div class="leeg">Nog geen nieuws.</div>';
+}
+
+/* ============================================================
+   LEDEN
+   ============================================================ */
+function renderLeden(){
+  const tbody = document.getElementById('leden-tbody');
+  if(!tbody) return;
+  const zoek = (document.getElementById('leden-zoek').value || '').toLowerCase();
+  const rolFilter = document.getElementById('leden-filter-rol').value;
+
+  const gefilterd = state.leden.filter(l => {
+    const matchZoek = l.naam.toLowerCase().includes(zoek) || l.email.toLowerCase().includes(zoek);
+    const matchRol = !rolFilter || l.rol === rolFilter;
+    return matchZoek && matchRol;
+  });
+
+  tbody.innerHTML = gefilterd.map(l => `
+    <tr>
+      <td><div class="rij-lid"><span class="avatar">${initialen(l.naam)}</span><div><div>${escapeHtml(l.naam)}</div><div class="sessie-meta">${escapeHtml(l.email)}</div></div></div></td>
+      <td>${escapeHtml(l.niveau || '—')}</td>
+      <td>${l.rating}</td>
+      <td>${bundelNaam(l.bundelId)}</td>
+      <td><span class="badge badge-${l.rol}">${rolBadgeLabel(l.rol)}</span></td>
+      <td><span class="badge ${l.actief ? 'badge-actief' : 'badge-inactief'}">${l.actief ? 'Actief' : 'Inactief'}</span></td>
+      <td>${l.duprId ? escapeHtml(l.duprId) : '<span style="color:var(--tekst-zacht);">—</span>'}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openLidDialog('${l.id}')">Bewerken</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderLid('${l.id}')">Verwijderen</button>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('leden-leeg').classList.toggle('hidden', gefilterd.length > 0);
+}
+
+function openLidDialog(lidId){
+  const dialog = document.getElementById('dialog-lid');
+  document.getElementById('lid-id').value = lidId || '';
+  if(lidId){
+    const l = state.leden.find(l => l.id === lidId);
+    document.getElementById('dialog-lid-titel').textContent = 'Lid bewerken';
+    document.getElementById('lid-naam').value = l.naam;
+    document.getElementById('lid-email').value = l.email;
+    document.getElementById('lid-niveau').value = l.niveau || '';
+    document.getElementById('lid-rol').value = l.rol;
+    document.getElementById('lid-dupr-id').value = l.duprId || '';
+    document.getElementById('lid-dupr-rating').value = l.duprRating || '';
+    document.getElementById('lid-actief').value = String(l.actief);
+  } else {
+    document.getElementById('dialog-lid-titel').textContent = 'Nieuw lid';
+    ['lid-naam','lid-email','lid-niveau','lid-dupr-id','lid-dupr-rating'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('lid-rol').value = 'lid';
+    document.getElementById('lid-actief').value = 'true';
+  }
+  dialog.showModal();
+}
+
+function opslaanLid(e){
+  e.preventDefault();
+  const id = document.getElementById('lid-id').value;
+  const gegevens = {
+    naam: document.getElementById('lid-naam').value.trim(),
+    email: document.getElementById('lid-email').value.trim(),
+    niveau: document.getElementById('lid-niveau').value.trim(),
+    rol: document.getElementById('lid-rol').value,
+    duprId: document.getElementById('lid-dupr-id').value.trim(),
+    duprRating: document.getElementById('lid-dupr-rating').value ? parseFloat(document.getElementById('lid-dupr-rating').value) : null,
+    actief: document.getElementById('lid-actief').value === 'true',
+  };
+
+  if(id){
+    const l = state.leden.find(l => l.id === id);
+    Object.assign(l, gegevens);
+    toast('Lid bijgewerkt.', 'succes');
+  } else {
+    state.leden.push({ id: uid('lid'), rating:1000, wins:0, matches:0, bundelId:null, gespeeld:0, ...gegevens });
+    toast('Nieuw lid toegevoegd.', 'succes');
+  }
+  save();
+  dichtDialog('dialog-lid');
+  renderAlles();
+}
+
+function verwijderLid(lidId){
+  if(!confirm('Dit lid verwijderen?')) return;
+  state.leden = state.leden.filter(l => l.id !== lidId);
+  save();
+  renderAlles();
+  toast('Lid verwijderd.', 'succes');
+}
+
+function exportDuprCSV(){
+  const rijen = [['Naam','Email','Niveau','DUPR ID','DUPR Rating']];
+  state.leden.forEach(l => rijen.push([l.naam, l.email, l.niveau || '', l.duprId || '', l.duprRating ?? '']));
+  const csv = rijen.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pickleball-den-haag-leden-dupr.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV geëxporteerd.', 'succes');
+}
+
+/* ============================================================
+   SESSIES (incl. wachtlijst-logica)
+   ============================================================ */
+function renderSessies(){
+  const lijst = document.getElementById('sessies-lijst');
+  if(!lijst) return;
+  const typeFilter = document.getElementById('sessies-filter-type').value;
+  const niveauFilter = document.getElementById('sessies-filter-niveau').value;
+
+  const gefilterd = state.sessies.filter(s => (!typeFilter || s.type === typeFilter) && (!niveauFilter || s.niveau === niveauFilter));
+
+  const dagen = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
+  const gegroepeerd = {};
+  gefilterd.forEach(s => { (gegroepeerd[s.dag] = gegroepeerd[s.dag] || []).push(s); });
+
+  const typeLabel = { session:'Open Play', clinic:'Clinic', tournament:'Toernooi' };
+
+  lijst.innerHTML = dagen.filter(d => gegroepeerd[d]).map(dag => `
+    <div class="sessie-groep">
+      <h3>${dag}</h3>
+      ${gegroepeerd[dag].map(s => {
+        const deelnemers = state.sessieDeelnemers.filter(d => d.sessieId === s.id && d.status === 'deelnemer');
+        const wachtlijst = state.sessieDeelnemers.filter(d => d.sessieId === s.id && d.status === 'wachtlijst');
+        const ikDeelnemer = state.sessieDeelnemers.some(d => d.sessieId === s.id && d.lidId === state.huidigeGebruikerId && d.status === 'deelnemer');
+        const ikWachtlijst = state.sessieDeelnemers.some(d => d.sessieId === s.id && d.lidId === state.huidigeGebruikerId && d.status === 'wachtlijst');
+        const vol = deelnemers.length >= s.maxSpelers;
+        const pct = Math.min(100, Math.round((deelnemers.length / s.maxSpelers) * 100));
+        return `
+        <div class="sessie-card">
+          <div class="sessie-info">
+            <b>${escapeHtml(s.titel)}</b> <span class="badge badge-deelnemer" style="margin-left:6px;">${typeLabel[s.type]}</span>
+            <div class="sessie-meta">
+              <span>${s.startTijd}–${s.eindTijd}</span>
+              <span>${escapeHtml(s.locatie)}</span>
+              <span>Niveau: ${escapeHtml(s.niveau)}</span>
+            </div>
+          </div>
+          <div class="sessie-acties">
+            <div style="text-align:right;">
+              <div style="font-size:12px;color:var(--tekst-zacht);">${deelnemers.length}/${s.maxSpelers}${wachtlijst.length ? ` · ${wachtlijst.length} op wachtlijst` : ''}</div>
+              <div class="voortgang"><div style="width:${pct}%;"></div></div>
+            </div>
+            ${ikDeelnemer || ikWachtlijst
+              ? `<button class="btn btn-sm" onclick="leaveSessie('${s.id}')">${ikWachtlijst ? 'Van wachtlijst af' : 'Uitschrijven'}</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="joinSessie('${s.id}')">${vol ? 'Op wachtlijst' : 'Inschrijven'}</button>`}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('') || '<div class="leeg">Geen sessies gevonden.</div>';
+}
+
+function addSessie(e){
+  e.preventDefault();
+  const nieuw = {
+    id: uid('ses'),
+    titel: document.getElementById('sessie-titel').value.trim(),
+    type: document.getElementById('sessie-type').value,
+    dag: document.getElementById('sessie-dag').value,
+    startTijd: document.getElementById('sessie-start').value,
+    eindTijd: document.getElementById('sessie-eind').value,
+    locatie: document.getElementById('sessie-locatie').value,
+    niveau: document.getElementById('sessie-niveau').value.trim() || 'Alle niveaus',
+    maxSpelers: parseInt(document.getElementById('sessie-max').value, 10),
+  };
+  state.sessies.push(nieuw);
+  save();
+  dichtDialog('dialog-sessie');
+  document.getElementById('dialog-sessie').querySelector('form').reset();
+  renderAlles();
+  toast('Sessie aangemaakt.', 'succes');
+}
+
+function openSessieDialog(){
+  document.getElementById('dialog-sessie').showModal();
+}
+
+function joinSessie(sessieId){
+  const lidId = state.huidigeGebruikerId;
+  const sessie = state.sessies.find(s => s.id === sessieId);
+  const bestaandeInschrijving = state.sessieDeelnemers.find(d => d.sessieId === sessieId && d.lidId === lidId);
+  if(bestaandeInschrijving){ toast('Je staat al ingeschreven voor deze sessie.'); return; }
+
+  const aantalDeelnemers = state.sessieDeelnemers.filter(d => d.sessieId === sessieId && d.status === 'deelnemer').length;
+  const status = aantalDeelnemers < sessie.maxSpelers ? 'deelnemer' : 'wachtlijst';
+  state.sessieDeelnemers.push({ sessieId, lidId, status });
+  save();
+  renderSessies();
+  toast(status === 'deelnemer' ? `Ingeschreven voor ${sessie.titel}.` : `Sessie is vol — op wachtlijst geplaatst voor ${sessie.titel}.`, 'succes');
+}
+
+function leaveSessie(sessieId){
+  const lidId = state.huidigeGebruikerId;
+  state.sessieDeelnemers = state.sessieDeelnemers.filter(d => !(d.sessieId === sessieId && d.lidId === lidId));
+
+  const sessie = state.sessies.find(s => s.id === sessieId);
+  const deelnemers = state.sessieDeelnemers.filter(d => d.sessieId === sessieId && d.status === 'deelnemer');
+  if(deelnemers.length < sessie.maxSpelers){
+    const eersteOpWachtlijst = state.sessieDeelnemers.find(d => d.sessieId === sessieId && d.status === 'wachtlijst');
+    if(eersteOpWachtlijst){
+      eersteOpWachtlijst.status = 'deelnemer';
+      toast(`${lidNaam(eersteOpWachtlijst.lidId)} is van de wachtlijst doorgeschoven naar deelnemer.`, 'succes');
+    }
+  }
+  save();
+  renderSessies();
+}
+
+/* ============================================================
+   BANEN (optionele baanreservering-module)
+   ============================================================ */
+function renderBanen(){
+  const tbody = document.getElementById('banen-tbody');
+  if(!tbody) return;
+  const datumFilter = document.getElementById('banen-datum').value;
+  const locatieFilter = document.getElementById('banen-locatie').value;
+
+  const gefilterd = state.baanreserveringen
+    .filter(b => (!datumFilter || b.datum === datumFilter) && (!locatieFilter || b.locatie === locatieFilter))
+    .sort((a,b) => a.datum.localeCompare(b.datum) || a.tijdslot.localeCompare(b.tijdslot));
+
+  tbody.innerHTML = gefilterd.map(b => `
+    <tr>
+      <td>${datumNL(b.datum)}</td>
+      <td>${escapeHtml(b.tijdslot)}</td>
+      <td>${escapeHtml(b.locatie)}</td>
+      <td>${lidNaam(b.lidId)}</td>
+      <td style="text-align:right;">
+        ${b.lidId === state.huidigeGebruikerId ? `<button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderBaanreservering('${b.id}')">Annuleren</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('banen-leeg').classList.toggle('hidden', gefilterd.length > 0);
+}
+
+function openBaanDialog(){
+  document.getElementById('baan-datum-input').valueAsDate = new Date(Date.parse('2026-07-14'));
+  document.getElementById('dialog-baan').showModal();
+}
+
+function addBaanreservering(e){
+  e.preventDefault();
+  const locatie = document.getElementById('baan-locatie-input').value;
+  const datum = document.getElementById('baan-datum-input').value;
+  const tijdslot = document.getElementById('baan-tijdslot-input').value;
+
+  const bestaat = state.baanreserveringen.some(b => b.locatie === locatie && b.datum === datum && b.tijdslot === tijdslot);
+  if(bestaat){
+    toast('Dit tijdslot is al gereserveerd op deze baan. Kies een ander tijdslot.', 'fout');
+    return;
+  }
+
+  state.baanreserveringen.push({ id: uid('baan'), locatie, datum, tijdslot, lidId: state.huidigeGebruikerId });
+  save();
+  dichtDialog('dialog-baan');
+  renderBanen();
+  toast('Baan gereserveerd.', 'succes');
+}
+
+function verwijderBaanreservering(id){
+  state.baanreserveringen = state.baanreserveringen.filter(b => b.id !== id);
+  save();
+  renderBanen();
+  toast('Reservering geannuleerd.', 'succes');
+}
+
+function toggleBaanreservering(actief){
+  state.organisatie.baanreserveringActief = actief;
+  save();
+  renderAlles();
+  toast(actief ? 'Baanreservering-module ingeschakeld.' : 'Baanreservering-module uitgeschakeld.', 'succes');
+}
+
+/* ============================================================
+   WEDSTRIJDEN & ELO-RATING
+   ============================================================ */
+function berekenElo(teamAIds, teamBIds, scoreA, scoreB){
+  const K = 24;
+  const teamA = teamAIds.map(id => state.leden.find(l => l.id === id));
+  const teamB = teamBIds.map(id => state.leden.find(l => l.id === id));
+  const ratingA = teamA.reduce((s,l) => s + l.rating, 0) / teamA.length;
+  const ratingB = teamB.reduce((s,l) => s + l.rating, 0) / teamB.length;
+
+  const verwachtA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+  const verwachtB = 1 - verwachtA;
+  const werkelijkA = scoreA > scoreB ? 1 : 0;
+  const werkelijkB = 1 - werkelijkA;
+
+  const deltaA = Math.round(K * (werkelijkA - verwachtA));
+  const deltaB = Math.round(K * (werkelijkB - verwachtB));
+
+  teamA.forEach(l => { l.rating += deltaA; l.matches += 1; if(werkelijkA === 1) l.wins += 1; });
+  teamB.forEach(l => { l.rating += deltaB; l.matches += 1; if(werkelijkB === 1) l.wins += 1; });
+}
+
+function openWedstrijdDialog(){
+  document.getElementById('dialog-wedstrijd').showModal();
+}
+
+function addWedstrijd(e){
+  e.preventDefault();
+  const teamA = [document.getElementById('wed-a1').value, document.getElementById('wed-a2').value];
+  const teamB = [document.getElementById('wed-b1').value, document.getElementById('wed-b2').value];
+  const scoreA = parseInt(document.getElementById('wed-score-a').value, 10);
+  const scoreB = parseInt(document.getElementById('wed-score-b').value, 10);
+
+  const alleSpelers = [...teamA, ...teamB];
+  if(new Set(alleSpelers).size !== 4){
+    toast('Elke speler mag maar één keer voorkomen in deze wedstrijd.', 'fout');
+    return;
+  }
+  if(scoreA === scoreB){
+    toast('Een wedstrijd kan niet gelijk eindigen.', 'fout');
+    return;
+  }
+
+  berekenElo(teamA, teamB, scoreA, scoreB);
+  state.wedstrijden.unshift({ id: uid('wed'), teamA, teamB, scoreA, scoreB, gespeeldOp: new Date().toISOString().slice(0,10) });
+  save();
+  dichtDialog('dialog-wedstrijd');
+  renderAlles();
+  toast('Uitslag verwerkt, ratings bijgewerkt.', 'succes');
+}
+
+function renderWedstrijden(){
+  const ranglijstBody = document.getElementById('ranglijst-tbody');
+  if(!ranglijstBody) return;
+
+  const gesorteerd = [...state.leden].sort((a,b) => b.rating - a.rating);
+  ranglijstBody.innerHTML = gesorteerd.map((l, i) => {
+    const winrate = l.matches ? Math.round((l.wins / l.matches) * 100) : 0;
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td><div class="rij-lid"><span class="avatar">${initialen(l.naam)}</span>${escapeHtml(l.naam)}</div></td>
+        <td>${l.rating}</td>
+        <td>${l.wins} / ${l.matches}</td>
+        <td>${winrate}%</td>
+      </tr>`;
+  }).join('');
+
+  const lijst = document.getElementById('wedstrijden-lijst');
+  lijst.innerHTML = state.wedstrijden.slice(0,8).map(w => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--rand);font-size:13px;">
+      <div><b>${w.teamA.map(lidNaam).join(' &amp; ')}</b> <span style="color:var(--tekst-zacht);">vs</span> <b>${w.teamB.map(lidNaam).join(' &amp; ')}</b></div>
+      <div class="sessie-meta">${w.scoreA} – ${w.scoreB} · ${datumNL(w.gespeeldOp)}</div>
+    </div>
+  `).join('') || '<div class="leeg">Nog geen wedstrijden gespeeld.</div>';
+}
+
+/* ============================================================
+   MARKTPLAATS
+   ============================================================ */
+function renderMarktplaats(){
+  const grid = document.getElementById('markt-grid');
+  if(!grid) return;
+  const zoek = (document.getElementById('markt-zoek').value || '').toLowerCase();
+  const cat = document.getElementById('markt-filter-cat').value;
+
+  const catLabel = { paddle:'Paddle', ball:'Ballen', other:'Overig' };
+
+  const gefilterd = state.marktItems.filter(i => (!cat || i.categorie === cat) && i.titel.toLowerCase().includes(zoek));
+
+  grid.innerHTML = gefilterd.map(i => `
+    <div class="markt-card">
+      <div class="cat">${catLabel[i.categorie] || i.categorie}</div>
+      <h4>${escapeHtml(i.titel)}</h4>
+      <div class="prijs">${euro(i.prijs)}</div>
+      <p style="margin-top:8px;">${escapeHtml(i.omschrijving || '')}</p>
+      <div class="sessie-meta" style="margin-top:10px;">Verkoper: ${lidNaam(i.verkoperId)}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('markt-leeg').classList.toggle('hidden', gefilterd.length > 0);
+}
+
+function openMarktDialog(){
+  document.getElementById('dialog-markt').showModal();
+}
+
+function addMarktItem(e){
+  e.preventDefault();
+  state.marktItems.unshift({
+    id: uid('markt'),
+    titel: document.getElementById('markt-titel').value.trim(),
+    prijs: parseFloat(document.getElementById('markt-prijs').value),
+    categorie: document.getElementById('markt-categorie').value,
+    omschrijving: document.getElementById('markt-omschrijving').value.trim(),
+    verkoperId: state.huidigeGebruikerId,
+    createdAt: new Date().toISOString(),
+  });
+  save();
+  dichtDialog('dialog-markt');
+  document.getElementById('dialog-markt').querySelector('form').reset();
+  renderMarktplaats();
+  toast('Item geplaatst op de marktplaats.', 'succes');
+}
+
+/* ============================================================
+   NIEUWS
+   ============================================================ */
+function renderNieuws(){
+  const lijst = document.getElementById('nieuws-lijst');
+  if(!lijst) return;
+  const gesorteerd = [...state.nieuwsberichten].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  lijst.innerHTML = gesorteerd.map(n => `
+    <div class="nieuws-item">
+      <div class="meta">${datumNL(n.createdAt)} · ${escapeHtml(n.categorie)}</div>
+      <h4>${escapeHtml(n.titel)}</h4>
+      <p>${escapeHtml(n.body)}</p>
+    </div>
+  `).join('') || '<div class="leeg">Nog geen nieuwsberichten.</div>';
+}
+
+function openNieuwsDialog(){
+  document.getElementById('dialog-nieuws').showModal();
+}
+
+function addNieuws(e){
+  e.preventDefault();
+  state.nieuwsberichten.unshift({
+    id: uid('nieuws'),
+    titel: document.getElementById('nieuws-titel').value.trim(),
+    categorie: document.getElementById('nieuws-categorie').value,
+    body: document.getElementById('nieuws-body').value.trim(),
+    createdAt: new Date().toISOString(),
+  });
+  save();
+  dichtDialog('dialog-nieuws');
+  document.getElementById('dialog-nieuws').querySelector('form').reset();
+  renderNieuws();
+  renderDashboard();
+  toast('Nieuwsbericht geplaatst.', 'succes');
+}
+
+/* ============================================================
+   CONTRIBUTIE & BETALINGEN (nep — toont alleen een toast,
+   wordt in Fase 3 vervangen door een echte Mollie-integratie)
+   ============================================================ */
+function renderContributie(){
+  const grid = document.getElementById('bundels-grid');
+  if(!grid) return;
+  const lid = huidigLid();
+
+  grid.innerHTML = state.bundels.map(b => `
+    <div class="bundel-card ${lid && lid.bundelId === b.id ? 'actief-bundel' : ''}">
+      <div>
+        <div class="prijs">${euro(b.prijs)} <small>/ ${b.geldigheid}</small></div>
+        <b>${escapeHtml(b.naam)}</b>
+      </div>
+      <p>${escapeHtml(b.omschrijving)}</p>
+      <div class="sessie-meta">${b.speelbeurten >= 999 ? 'Onbeperkt speelbeurten' : b.speelbeurten + ' speelbeurten'}</div>
+      ${lid && lid.bundelId === b.id
+        ? `<button class="btn btn-sm" disabled>Huidige bundel</button>`
+        : `<div class="veld-rij" style="margin-top:4px;">
+             <button class="btn btn-primary btn-sm" style="flex:1;" onclick="doPayment('${b.id}','ideal')">iDEAL</button>
+             <button class="btn btn-sm" style="flex:1;" onclick="doPayment('${b.id}','tikkie')">Tikkie</button>
+           </div>`}
+    </div>
+  `).join('');
+
+  const tbody = document.getElementById('mijn-betalingen-tbody');
+  const mijnBetalingen = state.betalingen.filter(b => b.lidId === state.huidigeGebruikerId).sort((a,b) => new Date(b.aangemaaktOp) - new Date(a.aangemaaktOp));
+  tbody.innerHTML = mijnBetalingen.map(b => `
+    <tr>
+      <td>${datumNL(b.aangemaaktOp)}</td>
+      <td>${bundelNaam(b.bundelId)}</td>
+      <td>${euro(b.bedrag)}</td>
+      <td>${b.methode.toUpperCase()}</td>
+      <td><span class="badge badge-${b.status}">${b.status === 'betaald' ? 'Betaald' : b.status === 'open' ? 'Open' : 'Mislukt'}</span></td>
+    </tr>
+  `).join('');
+  document.getElementById('mijn-betalingen-leeg').classList.toggle('hidden', mijnBetalingen.length > 0);
+}
+
+function doPayment(bundelId, methode){
+  const lid = huidigLid();
+  const bundel = state.bundels.find(b => b.id === bundelId);
+
+  const betaling = {
+    id: uid('bet'),
+    lidId: lid.id,
+    bundelId,
+    bedrag: bundel.prijs,
+    methode,
+    molliePaymentId: 'demo_' + uid('mollie'),
+    status: 'betaald',
+    aangemaaktOp: new Date().toISOString(),
+  };
+  state.betalingen.push(betaling);
+  lid.bundelId = bundelId;
+  lid.gespeeld = 0;
+  save();
+
+  renderContributie();
+  renderFinancieel();
+  toast(`Betaling gelukt (demo) via ${methode === 'ideal' ? 'iDEAL' : 'Tikkie'}. In Fase 3 wordt dit een echte Mollie-betaling.`, 'succes');
+}
+
+/* ============================================================
+   FINANCIEEL BEHEER (bestuur / penningmeester)
+   ============================================================ */
+function renderFinancieel(){
+  const stats = document.getElementById('financieel-stats');
+  const tbody = document.getElementById('financieel-tbody');
+  if(!stats || !tbody) return;
+
+  if(!magFinancieelZien()){
+    stats.innerHTML = '';
+    tbody.innerHTML = '';
+    return;
+  }
+
+  const betaald = state.betalingen.filter(b => b.status === 'betaald');
+  const totaal = betaald.reduce((s,b) => s + b.bedrag, 0);
+  const aantalActieveBundels = state.leden.filter(l => l.bundelId).length;
+  const gemiddeld = betaald.length ? totaal / betaald.length : 0;
+
+  stats.innerHTML = `
+    <div class="card"><h3>Totale inkomsten</h3><div class="stat">${euro(totaal)}</div></div>
+    <div class="card"><h3>Leden met actieve bundel</h3><div class="stat">${aantalActieveBundels}</div></div>
+    <div class="card"><h3>Gemiddeld bedrag / betaling</h3><div class="stat">${euro(gemiddeld)}</div></div>
+  `;
+
+  const gesorteerd = [...state.betalingen].sort((a,b) => new Date(b.aangemaaktOp) - new Date(a.aangemaaktOp));
+  tbody.innerHTML = gesorteerd.map(b => `
+    <tr>
+      <td>${datumNL(b.aangemaaktOp)}</td>
+      <td>${lidNaam(b.lidId)}</td>
+      <td>${bundelNaam(b.bundelId)}</td>
+      <td>${euro(b.bedrag)}</td>
+      <td>${b.methode.toUpperCase()}</td>
+      <td style="color:var(--tekst-zacht);">${escapeHtml(b.molliePaymentId)}</td>
+      <td><span class="badge badge-${b.status}">${b.status === 'betaald' ? 'Betaald' : b.status === 'open' ? 'Open' : 'Mislukt'}</span></td>
+    </tr>
+  `).join('') || `<tr><td colspan="7" class="leeg-financieel">Nog geen betalingen.</td></tr>`;
+}
+
+/* ============================================================
+   INSTELLINGEN
+   ============================================================ */
+function renderInstellingen(){
+  const toggle = document.getElementById('toggle-baanreservering');
+  if(!toggle) return;
+  toggle.checked = !!state.organisatie.baanreserveringActief;
+}
+
+/* ---------- init ---------- */
+renderAlles();
+</script>
+</body>
+</html>
