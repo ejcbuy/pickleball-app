@@ -8,17 +8,34 @@ Het beschrijft wat er al bestaat, wat het doel is, en de regels waaraan je je mo
 Ledenpanel voor pickleballverenigingen (eerste klant: Pickleball Den Haag), met als
 uiteindelijk doel: dezelfde app ook verkopen aan locaties die banen verhuren.
 
-Huidige staat: `ledenpanel.html` is een werkend, visueel afgerond prototype
-(HTML/CSS/JS in één bestand) met alle UI/UX en business-logica al aanwezig:
-- Ledenbeheer, interne ELO-rating berekening
-- Sessies/Open Play/Clinics/Toernooien met wachtlijst-logica
-- DUPR-koppeling (CSV-export, ID-koppeling per lid)
-- Marktplaats, Nieuws
-- Contributie/bundels + betaalmethode-keuze (nu nog nep — toont alleen een toast)
-- Financieel beheer (alleen zichtbaar voor bestuur/penningmeester)
+Huidige staat: `ledenpanel.html` is één HTML/CSS/JS-bestand, live op
+`https://ejcbuy.github.io/pickleball-app/ledenpanel.html` (GitHub Pages, repo
+`github.com/ejcbuy/pickleball-app`) en gekoppeld aan een echt Supabase-project.
 
-Alle data zit nu in `localStorage` — dus alleen zichtbaar in de eigen browser, niet
-gedeeld tussen leden. Dat is het kernprobleem dat opgelost moet worden.
+**Fase 1 (Database & Authenticatie) — af.** Registreren/inloggen/wachtwoord-
+vergeten werken echt (Supabase Auth). "Mijn account" leest/schrijft de eigen
+`leden`-rij. RLS staat aan op alle tabellen, incl. een kolombeveiligings-trigger
+die voorkomt dat een gewoon lid zijn eigen rol/rating/organisatie kan wijzigen.
+
+**Fase 2 (Ledenbeheer, Sessies, Baanreservering, Wedstrijden) — af.** Leden,
+Sessies (incl. wachtlijst), Banen en Wedstrijden praten nu echt met Supabase:
+- Ledenbeheer: bestuur/penningmeester bewerken/verwijderen leden; nieuwe leden
+  ontstaan alleen via registratie (Fase 1), niet meer handmatig aan te maken.
+- Sessies: inschrijven/wachtlijst zoals voorheen; wachtlijst-promotie bij
+  uitschrijven gebeurt nu via een database-trigger (`promoveer_wachtlijst()`,
+  zie `supabase/fase2.sql`), niet meer client-side.
+- Banen: gebruikt nu `baan_nummer` + `start_tijd`/`eind_tijd` i.p.v. een vrije
+  tekst-tijdslot; dubbele boekingen worden op databaseniveau geweigerd.
+- Wedstrijden: ELO-berekening staat nu in de database-functie
+  `registreer_wedstrijd()` (security definer) omdat een gewoon lid anders door
+  de kolombeveiliging geblokkeerd zou worden bij het bijwerken van andermans
+  rating/wins/matches.
+
+**Nog op de demo-databron (localStorage), ongewijzigd:** Marktplaats, Nieuws,
+Contributie/bundels + betaalmethode-keuze (nu nog nep — toont alleen een toast),
+Financieel beheer. Deze volgen in latere fases. De demo-gebruikerswisselaar in de
+zijbalk stuurt alleen deze onderdelen aan, niet meer Leden/Sessies/Banen/Wedstrijden
+(die volgen de echte ingelogde Supabase-gebruiker).
 
 ## Doel van dit traject
 

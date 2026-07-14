@@ -376,7 +376,7 @@
 
     <!-- MIJN ACCOUNT (Supabase — echte auth, Fase 1) -->
     <section id="view-account" class="view hidden">
-      <div class="account-hint">Dit is de echte, met Supabase Auth beveiligde account-pagina. De rest van het ledenpanel (Leden, Sessies, Financieel, …) gebruikt in deze fase nog de demo-databron hierboven in de zijbalk — dat wordt pas in Fase 2 omgezet.</div>
+      <div class="account-hint">Dit is de echte, met Supabase Auth beveiligde account-pagina. Leden, Sessies, Banen en Wedstrijden praten inmiddels ook echt met de database (Fase 2). Marktplaats, Nieuws, Contributie en Financieel gebruiken nog de demo-databron hierboven in de zijbalk — dat volgt in latere fases.</div>
       <div class="paneel">
         <div class="paneel-hoofd"><h2>Mijn profiel</h2></div>
         <div class="paneel-body">
@@ -408,6 +408,7 @@
 
     <!-- LEDEN -->
     <section id="view-leden" class="view hidden">
+      <div class="account-hint">Leden registreren zichzelf via de inlogpagina (Fase 1) — deze pagina is daarom voor bestuur/penningmeester om bestaande leden te beheren (rol wijzigen, activeren/deactiveren), niet om nieuwe leden handmatig aan te maken.</div>
       <div class="zoekbalk">
         <input type="text" id="leden-zoek" placeholder="Zoek op naam of e-mail…" oninput="renderLeden()">
         <select id="leden-filter-rol" onchange="renderLeden()">
@@ -417,7 +418,6 @@
           <option value="penningmeester">Penningmeester</option>
         </select>
         <button class="btn" onclick="exportDuprCSV()">Exporteer CSV (DUPR)</button>
-        <button class="btn btn-primary" onclick="openLidDialog()">+ Nieuw lid</button>
       </div>
       <div class="paneel">
         <div class="paneel-body" style="padding:0;">
@@ -461,7 +461,7 @@
       <div class="paneel">
         <div class="paneel-body" style="padding:0;">
           <table>
-            <thead><tr><th>Datum</th><th>Tijdslot</th><th>Locatie</th><th>Gereserveerd door</th><th></th></tr></thead>
+            <thead><tr><th>Datum</th><th>Baan</th><th>Tijd</th><th>Locatie</th><th>Gereserveerd door</th><th></th></tr></thead>
             <tbody id="banen-tbody"></tbody>
           </table>
           <div id="banen-leeg" class="leeg hidden">Geen reserveringen gevonden.</div>
@@ -584,11 +584,11 @@
 <!-- Dialoog: Lid toevoegen/bewerken -->
 <dialog id="dialog-lid">
   <form method="dialog" onsubmit="opslaanLid(event)">
-    <div class="dialog-hoofd"><h3 id="dialog-lid-titel">Nieuw lid</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-lid')">✕</button></div>
+    <div class="dialog-hoofd"><h3 id="dialog-lid-titel">Lid bewerken</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-lid')">✕</button></div>
     <div class="dialog-body">
       <input type="hidden" id="lid-id">
       <div class="veld"><label>Naam</label><input type="text" id="lid-naam" required></div>
-      <div class="veld"><label>E-mail</label><input type="email" id="lid-email" required></div>
+      <div class="veld"><label>E-mail</label><input type="email" id="lid-email" disabled></div>
       <div class="veld-rij">
         <div class="veld"><label>Niveau (DUPR-klasse)</label><input type="text" id="lid-niveau" placeholder="bijv. 3.5"></div>
         <div class="veld"><label>Rol</label>
@@ -662,17 +662,16 @@
   <form method="dialog" onsubmit="addBaanreservering(event)">
     <div class="dialog-hoofd"><h3>Baan reserveren</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-baan')">✕</button></div>
     <div class="dialog-body">
-      <div class="veld"><label>Locatie</label><select id="baan-locatie-input"></select></div>
       <div class="veld-rij">
-        <div class="veld"><label>Datum</label><input type="date" id="baan-datum-input" required></div>
-        <div class="veld"><label>Tijdslot</label>
-          <select id="baan-tijdslot-input">
-            <option>08:00 - 09:00</option><option>09:00 - 10:00</option><option>10:00 - 11:00</option>
-            <option>17:00 - 18:00</option><option>18:00 - 19:00</option><option>19:00 - 20:00</option><option>20:00 - 21:00</option>
-          </select>
-        </div>
+        <div class="veld"><label>Locatie</label><select id="baan-locatie-input"></select></div>
+        <div class="veld"><label>Baan-nummer</label><input type="number" id="baan-nummer-input" min="1" value="1" required></div>
       </div>
-      <p style="font-size:12px;color:var(--tekst-zacht);margin:0;">Een tijdslot kan maar door één lid tegelijk geclaimd worden — dit wordt straks op databaseniveau afgedwongen (unique constraint), niet alleen in deze UI.</p>
+      <div class="veld"><label>Datum</label><input type="date" id="baan-datum-input" required></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Starttijd</label><input type="time" id="baan-start-input" value="19:00" required></div>
+        <div class="veld"><label>Eindtijd</label><input type="time" id="baan-eind-input" value="20:00" required></div>
+      </div>
+      <p style="font-size:12px;color:var(--tekst-zacht);margin:0;">Een baan kan maar door één lid tegelijk op hetzelfde tijdstip geclaimd worden — dit wordt op databaseniveau afgedwongen (unique constraint), niet alleen in deze UI.</p>
     </div>
     <div class="dialog-voet">
       <button type="button" class="btn" onclick="dichtDialog('dialog-baan')">Annuleren</button>
@@ -774,7 +773,6 @@ const AUTH_TABS = ['login', 'registreren', 'vergeten'];
 
 let authGebruiker = null;   // Supabase auth.users-object
 let mijnLid = null;         // eigen rij uit de `leden`-tabel
-let mijnOrganisatieNaam = '';
 let wachtwoordHerstelModus = false;
 
 function toonApp(){ document.body.classList.remove('niet-ingelogd'); }
@@ -882,20 +880,14 @@ async function ensureLidRow(user){
   return nieuw;
 }
 
-async function laadMijnOrganisatie(){
-  if(!mijnLid){ mijnOrganisatieNaam = ''; return; }
-  const { data, error } = await supabaseClient
-    .from('organisaties').select('naam').eq('id', mijnLid.organisatie_id).maybeSingle();
-  if(!error && data) mijnOrganisatieNaam = data.naam;
-}
-
 async function opnieuwLadenNaAuth(){
   const { data: { user } } = await supabaseClient.auth.getUser();
   authGebruiker = user;
   mijnLid = user ? await ensureLidRow(user) : null;
-  await laadMijnOrganisatie();
+  if(mijnLid) await laadDatabaseData();
   bijwerkenAuthStatus();
   renderAccount();
+  renderAlles();
   toonApp();
 }
 
@@ -924,7 +916,7 @@ function renderAccount(){
   const badge = document.getElementById('account-rol-badge');
   badge.textContent = rolBadgeLabel(mijnLid.rol);
   badge.className = 'badge badge-' + mijnLid.rol;
-  document.getElementById('account-organisatie').textContent = mijnOrganisatieNaam;
+  document.getElementById('account-organisatie').textContent = dbOrganisatie ? dbOrganisatie.naam : '';
   document.getElementById('account-bestuur-paneel').classList.toggle(
     'hidden', !(mijnLid.rol === 'bestuur' || mijnLid.rol === 'penningmeester')
   );
@@ -970,6 +962,87 @@ supabaseClient.auth.onAuthStateChange(async (event, session) => {
 });
 
 /* ============================================================
+   FASE 2 — Leden, Sessies, Banen en Wedstrijden praten nu ook
+   echt met Supabase. Marktplaats, Nieuws, Contributie en
+   Financieel blijven bewust op de demo-databron (state) tot
+   Fase 3/4 — zie CLAUDE.md.
+   ============================================================ */
+
+let dbLeden = [];
+let dbBundels = [];
+let dbSessies = [];
+let dbSessieDeelnemers = [];
+let dbBaanreserveringen = [];
+let dbWedstrijden = [];
+let dbOrganisatie = null;
+
+function dbLidNaam(lidId){
+  const l = dbLeden.find(x => x.id === lidId);
+  return l ? l.naam : 'Onbekend lid';
+}
+function dbBundelNaam(bundelId){
+  const b = dbBundels.find(x => x.id === bundelId);
+  return b ? b.naam : '—';
+}
+function magLedenBeheren(){
+  return !!mijnLid && (mijnLid.rol === 'bestuur' || mijnLid.rol === 'penningmeester');
+}
+
+async function laadLeden(){
+  const { data, error } = await supabaseClient.from('leden').select('*').order('naam');
+  if(error){ console.error(error); return; }
+  dbLeden = data;
+}
+async function laadBundels(){
+  const { data, error } = await supabaseClient.from('bundels').select('*');
+  if(error){ console.error(error); return; }
+  dbBundels = data;
+}
+async function laadSessies(){
+  const { data, error } = await supabaseClient.from('sessies').select('*').order('dag');
+  if(error){ console.error(error); return; }
+  dbSessies = data;
+}
+async function laadSessieDeelnemers(){
+  const { data, error } = await supabaseClient.from('sessie_deelnemers').select('*');
+  if(error){ console.error(error); return; }
+  dbSessieDeelnemers = data;
+}
+async function laadBaanreserveringen(){
+  const { data, error } = await supabaseClient
+    .from('baanreserveringen').select('*').order('datum').order('start_tijd');
+  if(error){ console.error(error); return; }
+  dbBaanreserveringen = data;
+}
+async function laadWedstrijden(){
+  const { data, error } = await supabaseClient
+    .from('wedstrijden')
+    .select('*, wedstrijd_deelnemers(lid_id, team)')
+    .order('gespeeld_op', { ascending:false })
+    .order('created_at', { ascending:false });
+  if(error){ console.error(error); return; }
+  dbWedstrijden = data;
+}
+async function laadOrganisatie(){
+  if(!mijnLid){ dbOrganisatie = null; return; }
+  const { data, error } = await supabaseClient
+    .from('organisaties').select('*').eq('id', mijnLid.organisatie_id).maybeSingle();
+  if(!error) dbOrganisatie = data;
+}
+
+async function laadDatabaseData(){
+  await Promise.all([
+    laadLeden(), laadBundels(), laadSessies(), laadSessieDeelnemers(),
+    laadBaanreserveringen(), laadWedstrijden(), laadOrganisatie(),
+  ]);
+}
+
+async function ververs(){
+  await laadDatabaseData();
+  renderAlles();
+}
+
+/* ============================================================
    Vanaf hier: het bestaande prototype, ongewijzigd op localStorage.
    ============================================================ */
 
@@ -999,31 +1072,6 @@ function seedData(){
     { id:'incidenteel', naam:'Losse sessie', prijs:6, omschrijving:'Eenmalig meespelen, per keer afrekenen.', speelbeurten:1, geldigheid:'1 sessie' },
   ];
 
-  const sessies = [
-    { id:'ses_1', titel:'Open Play 2.5-3.0', type:'session', dag:'Maandag', startTijd:'19:00', eindTijd:'21:00', locatie:'Sportcampus Zuiderpark', niveau:'2.5-3.0', maxSpelers:16 },
-    { id:'ses_2', titel:'Open Play 3.0-3.5', type:'session', dag:'Dinsdag', startTijd:'19:00', eindTijd:'21:00', locatie:'Pickleplex Houtrust', niveau:'3.0-3.5', maxSpelers:16 },
-    { id:'ses_3', titel:'Clinic: opslag & return', type:'clinic', dag:'Woensdag', startTijd:'18:30', eindTijd:'20:00', locatie:'HSV Wassenaar', niveau:'Alle niveaus', maxSpelers:12 },
-    { id:'ses_4', titel:'Open Play 3.5-4.0+', type:'session', dag:'Donderdag', startTijd:'19:30', eindTijd:'21:30', locatie:'Sportcampus Zuiderpark', niveau:'3.5-4.0+', maxSpelers:16 },
-    { id:'ses_5', titel:'Voorjaarstoernooi', type:'tournament', dag:'Zaterdag', startTijd:'10:00', eindTijd:'17:00', locatie:'Pickleplex Houtrust', niveau:'Alle niveaus', maxSpelers:32 },
-  ];
-
-  const sessieDeelnemers = [
-    { sessieId:'ses_1', lidId:'lid_3', status:'deelnemer' },
-    { sessieId:'ses_1', lidId:'lid_5', status:'deelnemer' },
-    { sessieId:'ses_2', lidId:'lid_2', status:'deelnemer' },
-    { sessieId:'ses_2', lidId:'lid_4', status:'deelnemer' },
-    { sessieId:'ses_2', lidId:'lid_8', status:'deelnemer' },
-    { sessieId:'ses_4', lidId:'lid_1', status:'deelnemer' },
-    { sessieId:'ses_4', lidId:'lid_6', status:'deelnemer' },
-  ];
-
-  const baanreserveringen = [];
-
-  const wedstrijden = [
-    { id:'wed_1', teamA:['lid_1','lid_6'], teamB:['lid_2','lid_4'], scoreA:11, scoreB:7, gespeeldOp:'2026-07-08' },
-    { id:'wed_2', teamA:['lid_3','lid_5'], teamB:['lid_8','lid_7'], scoreA:9, scoreB:11, gespeeldOp:'2026-07-10' },
-  ];
-
   const marktItems = [
     { id:'markt_1', titel:'Selkirk Vanguard Power Air', prijs:145, categorie:'paddle', omschrijving:'Amper gebruikt, incl. hoes.', verkoperId:'lid_2', createdAt:'2026-07-01T10:00:00.000Z' },
     { id:'markt_2', titel:'12x outdoor ballen (Franklin X-40)', prijs:25, categorie:'ball', omschrijving:'Ongeopende doos.', verkoperId:'lid_6', createdAt:'2026-07-05T10:00:00.000Z' },
@@ -1044,10 +1092,9 @@ function seedData(){
   ];
 
   return {
-    organisatie: { id:'org_1', naam:'Pickleball Den Haag', baanreserveringActief:false },
     huidigeGebruikerId: 'lid_2',
     huidigeView: 'dashboard',
-    leden, bundels, sessies, sessieDeelnemers, baanreserveringen, wedstrijden, marktItems, nieuwsberichten, betalingen,
+    leden, bundels, marktItems, nieuwsberichten, betalingen,
   };
 }
 
@@ -1088,6 +1135,7 @@ function datumNL(iso){
   return d.toLocaleDateString('nl-NL', { day:'2-digit', month:'short', year:'numeric' });
 }
 function rolBadgeLabel(rol){ return rol === 'bestuur' ? 'Bestuur' : rol === 'penningmeester' ? 'Penningmeester' : 'Lid'; }
+function tijdKort(t){ return t ? String(t).slice(0,5) : ''; }
 function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -1142,7 +1190,7 @@ function renderNav(){
   const nav = document.getElementById('navlist');
   nav.innerHTML = '';
   NAV_ITEMS.forEach(item => {
-    if(item.moduleAfhankelijk && !state.organisatie.baanreserveringActief) return;
+    if(item.moduleAfhankelijk && !(dbOrganisatie && dbOrganisatie.baanreservering_actief)) return;
     if(item.vergrendeld && !magFinancieelZien()) return;
     const btn = document.createElement('button');
     btn.className = item.view === state.huidigeView ? 'actief' : '';
@@ -1152,7 +1200,7 @@ function renderNav(){
   });
 
   if(state.huidigeView === 'financieel' && !magFinancieelZien()) navigeer('dashboard');
-  if(state.huidigeView === 'banen' && !state.organisatie.baanreserveringActief) navigeer('dashboard');
+  if(state.huidigeView === 'banen' && !(dbOrganisatie && dbOrganisatie.baanreservering_actief)) navigeer('dashboard');
 }
 
 function renderTopbar(){
@@ -1209,10 +1257,10 @@ function vulSelecties(){
   const banenLocatieFilter = document.getElementById('banen-locatie');
   banenLocatieFilter.innerHTML = '<option value="">Alle locaties</option>' + LOCATIES.map(l => `<option>${l}</option>`).join('');
 
-  const niveaus = [...new Set(state.sessies.map(s => s.niveau))];
+  const niveaus = [...new Set(dbSessies.map(s => s.niveau))];
   document.getElementById('sessies-filter-niveau').innerHTML = '<option value="">Alle niveaus</option>' + niveaus.map(n => `<option>${escapeHtml(n)}</option>`).join('');
 
-  const spelerOpties = state.leden.filter(l => l.actief).map(l => `<option value="${l.id}">${escapeHtml(l.naam)}</option>`).join('');
+  const spelerOpties = dbLeden.filter(l => l.actief).map(l => `<option value="${l.id}">${escapeHtml(l.naam)}</option>`).join('');
   ['wed-a1','wed-a2','wed-b1','wed-b2'].forEach(id => { document.getElementById(id).innerHTML = spelerOpties; });
 }
 
@@ -1222,8 +1270,8 @@ function vulSelecties(){
 function renderDashboard(){
   const el = document.getElementById('dashboard-stats');
   if(!el) return;
-  const actieveLeden = state.leden.filter(l => l.actief).length;
-  const opkomendeSessies = state.sessies.length;
+  const actieveLeden = dbLeden.filter(l => l.actief).length;
+  const opkomendeSessies = dbSessies.length;
   const openItems = state.marktItems.length;
   const inkomstenMaand = state.betalingen.filter(b => b.status === 'betaald').reduce((s,b) => s + b.bedrag, 0);
 
@@ -1235,10 +1283,10 @@ function renderDashboard(){
   `;
 
   const sessiesEl = document.getElementById('dashboard-sessies');
-  sessiesEl.innerHTML = state.sessies.slice(0,4).map(s => `
+  sessiesEl.innerHTML = dbSessies.slice(0,4).map(s => `
     <div style="padding:8px 0;border-bottom:1px solid var(--rand);">
       <b style="font-size:13.5px;">${escapeHtml(s.titel)}</b>
-      <div class="sessie-meta">${s.dag} ${s.startTijd}–${s.eindTijd} · ${escapeHtml(s.locatie)}</div>
+      <div class="sessie-meta">${s.dag} ${tijdKort(s.start_tijd)}–${tijdKort(s.eind_tijd)} · ${escapeHtml(s.locatie)}</div>
     </div>`).join('') || '<div class="leeg">Nog geen sessies.</div>';
 
   const nieuwsEl = document.getElementById('dashboard-nieuws');
@@ -1258,8 +1306,9 @@ function renderLeden(){
   if(!tbody) return;
   const zoek = (document.getElementById('leden-zoek').value || '').toLowerCase();
   const rolFilter = document.getElementById('leden-filter-rol').value;
+  const magBeheren = magLedenBeheren();
 
-  const gefilterd = state.leden.filter(l => {
+  const gefilterd = dbLeden.filter(l => {
     const matchZoek = l.naam.toLowerCase().includes(zoek) || l.email.toLowerCase().includes(zoek);
     const matchRol = !rolFilter || l.rol === rolFilter;
     return matchZoek && matchRol;
@@ -1270,13 +1319,15 @@ function renderLeden(){
       <td><div class="rij-lid"><span class="avatar">${initialen(l.naam)}</span><div><div>${escapeHtml(l.naam)}</div><div class="sessie-meta">${escapeHtml(l.email)}</div></div></div></td>
       <td>${escapeHtml(l.niveau || '—')}</td>
       <td>${l.rating}</td>
-      <td>${bundelNaam(l.bundelId)}</td>
+      <td>${dbBundelNaam(l.bundel_id)}</td>
       <td><span class="badge badge-${l.rol}">${rolBadgeLabel(l.rol)}</span></td>
       <td><span class="badge ${l.actief ? 'badge-actief' : 'badge-inactief'}">${l.actief ? 'Actief' : 'Inactief'}</span></td>
-      <td>${l.duprId ? escapeHtml(l.duprId) : '<span style="color:var(--tekst-zacht);">—</span>'}</td>
+      <td>${l.dupr_id ? escapeHtml(l.dupr_id) : '<span style="color:var(--tekst-zacht);">—</span>'}</td>
       <td style="text-align:right;white-space:nowrap;">
-        <button class="btn btn-ghost btn-sm" onclick="openLidDialog('${l.id}')">Bewerken</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderLid('${l.id}')">Verwijderen</button>
+        ${magBeheren ? `
+          <button class="btn btn-ghost btn-sm" onclick="openLidDialog('${l.id}')">Bewerken</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderLid('${l.id}')">Verwijderen</button>
+        ` : ''}
       </td>
     </tr>
   `).join('');
@@ -1285,64 +1336,50 @@ function renderLeden(){
 }
 
 function openLidDialog(lidId){
+  if(!magLedenBeheren()){ toast('Alleen bestuur en penningmeester mogen leden bewerken.', 'fout'); return; }
   const dialog = document.getElementById('dialog-lid');
-  document.getElementById('lid-id').value = lidId || '';
-  if(lidId){
-    const l = state.leden.find(l => l.id === lidId);
-    document.getElementById('dialog-lid-titel').textContent = 'Lid bewerken';
-    document.getElementById('lid-naam').value = l.naam;
-    document.getElementById('lid-email').value = l.email;
-    document.getElementById('lid-niveau').value = l.niveau || '';
-    document.getElementById('lid-rol').value = l.rol;
-    document.getElementById('lid-dupr-id').value = l.duprId || '';
-    document.getElementById('lid-dupr-rating').value = l.duprRating || '';
-    document.getElementById('lid-actief').value = String(l.actief);
-  } else {
-    document.getElementById('dialog-lid-titel').textContent = 'Nieuw lid';
-    ['lid-naam','lid-email','lid-niveau','lid-dupr-id','lid-dupr-rating'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('lid-rol').value = 'lid';
-    document.getElementById('lid-actief').value = 'true';
-  }
+  const l = dbLeden.find(l => l.id === lidId);
+  if(!l) return;
+  document.getElementById('lid-id').value = l.id;
+  document.getElementById('lid-naam').value = l.naam;
+  document.getElementById('lid-email').value = l.email;
+  document.getElementById('lid-niveau').value = l.niveau || '';
+  document.getElementById('lid-rol').value = l.rol;
+  document.getElementById('lid-dupr-id').value = l.dupr_id || '';
+  document.getElementById('lid-dupr-rating').value = l.dupr_rating || '';
+  document.getElementById('lid-actief').value = String(l.actief);
   dialog.showModal();
 }
 
-function opslaanLid(e){
+async function opslaanLid(e){
   e.preventDefault();
   const id = document.getElementById('lid-id').value;
-  const gegevens = {
+  const updates = {
     naam: document.getElementById('lid-naam').value.trim(),
-    email: document.getElementById('lid-email').value.trim(),
-    niveau: document.getElementById('lid-niveau').value.trim(),
+    niveau: document.getElementById('lid-niveau').value.trim() || null,
     rol: document.getElementById('lid-rol').value,
-    duprId: document.getElementById('lid-dupr-id').value.trim(),
-    duprRating: document.getElementById('lid-dupr-rating').value ? parseFloat(document.getElementById('lid-dupr-rating').value) : null,
+    dupr_id: document.getElementById('lid-dupr-id').value.trim() || null,
+    dupr_rating: document.getElementById('lid-dupr-rating').value ? parseFloat(document.getElementById('lid-dupr-rating').value) : null,
     actief: document.getElementById('lid-actief').value === 'true',
   };
-
-  if(id){
-    const l = state.leden.find(l => l.id === id);
-    Object.assign(l, gegevens);
-    toast('Lid bijgewerkt.', 'succes');
-  } else {
-    state.leden.push({ id: uid('lid'), rating:1000, wins:0, matches:0, bundelId:null, gespeeld:0, ...gegevens });
-    toast('Nieuw lid toegevoegd.', 'succes');
-  }
-  save();
+  const { error } = await supabaseClient.from('leden').update(updates).eq('id', id);
+  if(error){ toast('Opslaan mislukt: ' + error.message, 'fout'); return; }
   dichtDialog('dialog-lid');
-  renderAlles();
+  toast('Lid bijgewerkt.', 'succes');
+  await ververs();
 }
 
-function verwijderLid(lidId){
-  if(!confirm('Dit lid verwijderen?')) return;
-  state.leden = state.leden.filter(l => l.id !== lidId);
-  save();
-  renderAlles();
+async function verwijderLid(lidId){
+  if(!confirm('Dit lid verwijderen uit de ledenlijst?')) return;
+  const { error } = await supabaseClient.from('leden').delete().eq('id', lidId);
+  if(error){ toast('Verwijderen mislukt: ' + error.message, 'fout'); return; }
   toast('Lid verwijderd.', 'succes');
+  await ververs();
 }
 
 function exportDuprCSV(){
   const rijen = [['Naam','Email','Niveau','DUPR ID','DUPR Rating']];
-  state.leden.forEach(l => rijen.push([l.naam, l.email, l.niveau || '', l.duprId || '', l.duprRating ?? '']));
+  dbLeden.forEach(l => rijen.push([l.naam, l.email, l.niveau || '', l.dupr_id || '', l.dupr_rating ?? '']));
   const csv = rijen.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -1363,37 +1400,38 @@ function renderSessies(){
   const typeFilter = document.getElementById('sessies-filter-type').value;
   const niveauFilter = document.getElementById('sessies-filter-niveau').value;
 
-  const gefilterd = state.sessies.filter(s => (!typeFilter || s.type === typeFilter) && (!niveauFilter || s.niveau === niveauFilter));
+  const gefilterd = dbSessies.filter(s => (!typeFilter || s.type === typeFilter) && (!niveauFilter || s.niveau === niveauFilter));
 
   const dagen = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
   const gegroepeerd = {};
   gefilterd.forEach(s => { (gegroepeerd[s.dag] = gegroepeerd[s.dag] || []).push(s); });
 
   const typeLabel = { session:'Open Play', clinic:'Clinic', tournament:'Toernooi' };
+  const mijnId = mijnLid ? mijnLid.id : null;
 
   lijst.innerHTML = dagen.filter(d => gegroepeerd[d]).map(dag => `
     <div class="sessie-groep">
       <h3>${dag}</h3>
       ${gegroepeerd[dag].map(s => {
-        const deelnemers = state.sessieDeelnemers.filter(d => d.sessieId === s.id && d.status === 'deelnemer');
-        const wachtlijst = state.sessieDeelnemers.filter(d => d.sessieId === s.id && d.status === 'wachtlijst');
-        const ikDeelnemer = state.sessieDeelnemers.some(d => d.sessieId === s.id && d.lidId === state.huidigeGebruikerId && d.status === 'deelnemer');
-        const ikWachtlijst = state.sessieDeelnemers.some(d => d.sessieId === s.id && d.lidId === state.huidigeGebruikerId && d.status === 'wachtlijst');
-        const vol = deelnemers.length >= s.maxSpelers;
-        const pct = Math.min(100, Math.round((deelnemers.length / s.maxSpelers) * 100));
+        const deelnemers = dbSessieDeelnemers.filter(d => d.sessie_id === s.id && d.status === 'deelnemer');
+        const wachtlijst = dbSessieDeelnemers.filter(d => d.sessie_id === s.id && d.status === 'wachtlijst');
+        const ikDeelnemer = dbSessieDeelnemers.some(d => d.sessie_id === s.id && d.lid_id === mijnId && d.status === 'deelnemer');
+        const ikWachtlijst = dbSessieDeelnemers.some(d => d.sessie_id === s.id && d.lid_id === mijnId && d.status === 'wachtlijst');
+        const vol = deelnemers.length >= s.max_spelers;
+        const pct = Math.min(100, Math.round((deelnemers.length / s.max_spelers) * 100));
         return `
         <div class="sessie-card">
           <div class="sessie-info">
             <b>${escapeHtml(s.titel)}</b> <span class="badge badge-deelnemer" style="margin-left:6px;">${typeLabel[s.type]}</span>
             <div class="sessie-meta">
-              <span>${s.startTijd}–${s.eindTijd}</span>
+              <span>${tijdKort(s.start_tijd)}–${tijdKort(s.eind_tijd)}</span>
               <span>${escapeHtml(s.locatie)}</span>
               <span>Niveau: ${escapeHtml(s.niveau)}</span>
             </div>
           </div>
           <div class="sessie-acties">
             <div style="text-align:right;">
-              <div style="font-size:12px;color:var(--tekst-zacht);">${deelnemers.length}/${s.maxSpelers}${wachtlijst.length ? ` · ${wachtlijst.length} op wachtlijst` : ''}</div>
+              <div style="font-size:12px;color:var(--tekst-zacht);">${deelnemers.length}/${s.max_spelers}${wachtlijst.length ? ` · ${wachtlijst.length} op wachtlijst` : ''}</div>
               <div class="voortgang"><div style="width:${pct}%;"></div></div>
             </div>
             ${ikDeelnemer || ikWachtlijst
@@ -1406,60 +1444,58 @@ function renderSessies(){
   `).join('') || '<div class="leeg">Geen sessies gevonden.</div>';
 }
 
-function addSessie(e){
+async function addSessie(e){
   e.preventDefault();
   const nieuw = {
-    id: uid('ses'),
+    organisatie_id: mijnLid.organisatie_id,
     titel: document.getElementById('sessie-titel').value.trim(),
     type: document.getElementById('sessie-type').value,
     dag: document.getElementById('sessie-dag').value,
-    startTijd: document.getElementById('sessie-start').value,
-    eindTijd: document.getElementById('sessie-eind').value,
+    start_tijd: document.getElementById('sessie-start').value,
+    eind_tijd: document.getElementById('sessie-eind').value,
     locatie: document.getElementById('sessie-locatie').value,
     niveau: document.getElementById('sessie-niveau').value.trim() || 'Alle niveaus',
-    maxSpelers: parseInt(document.getElementById('sessie-max').value, 10),
+    max_spelers: parseInt(document.getElementById('sessie-max').value, 10),
   };
-  state.sessies.push(nieuw);
-  save();
+  const { error } = await supabaseClient.from('sessies').insert(nieuw);
+  if(error){ toast('Aanmaken mislukt: ' + error.message, 'fout'); return; }
   dichtDialog('dialog-sessie');
   document.getElementById('dialog-sessie').querySelector('form').reset();
-  renderAlles();
   toast('Sessie aangemaakt.', 'succes');
+  await ververs();
 }
 
 function openSessieDialog(){
   document.getElementById('dialog-sessie').showModal();
 }
 
-function joinSessie(sessieId){
-  const lidId = state.huidigeGebruikerId;
-  const sessie = state.sessies.find(s => s.id === sessieId);
-  const bestaandeInschrijving = state.sessieDeelnemers.find(d => d.sessieId === sessieId && d.lidId === lidId);
+async function joinSessie(sessieId){
+  if(!mijnLid) return;
+  const sessie = dbSessies.find(s => s.id === sessieId);
+  const bestaandeInschrijving = dbSessieDeelnemers.find(d => d.sessie_id === sessieId && d.lid_id === mijnLid.id);
   if(bestaandeInschrijving){ toast('Je staat al ingeschreven voor deze sessie.'); return; }
 
-  const aantalDeelnemers = state.sessieDeelnemers.filter(d => d.sessieId === sessieId && d.status === 'deelnemer').length;
-  const status = aantalDeelnemers < sessie.maxSpelers ? 'deelnemer' : 'wachtlijst';
-  state.sessieDeelnemers.push({ sessieId, lidId, status });
-  save();
-  renderSessies();
+  const deelnemers = dbSessieDeelnemers.filter(d => d.sessie_id === sessieId && d.status === 'deelnemer');
+  const wachtlijst = dbSessieDeelnemers.filter(d => d.sessie_id === sessieId && d.status === 'wachtlijst');
+  const status = deelnemers.length < sessie.max_spelers ? 'deelnemer' : 'wachtlijst';
+  const positie = status === 'wachtlijst' ? wachtlijst.length + 1 : null;
+
+  const { error } = await supabaseClient
+    .from('sessie_deelnemers').insert({ sessie_id: sessieId, lid_id: mijnLid.id, status, positie });
+  if(error){ toast('Inschrijven mislukt: ' + error.message, 'fout'); return; }
   toast(status === 'deelnemer' ? `Ingeschreven voor ${sessie.titel}.` : `Sessie is vol — op wachtlijst geplaatst voor ${sessie.titel}.`, 'succes');
+  await ververs();
 }
 
-function leaveSessie(sessieId){
-  const lidId = state.huidigeGebruikerId;
-  state.sessieDeelnemers = state.sessieDeelnemers.filter(d => !(d.sessieId === sessieId && d.lidId === lidId));
-
-  const sessie = state.sessies.find(s => s.id === sessieId);
-  const deelnemers = state.sessieDeelnemers.filter(d => d.sessieId === sessieId && d.status === 'deelnemer');
-  if(deelnemers.length < sessie.maxSpelers){
-    const eersteOpWachtlijst = state.sessieDeelnemers.find(d => d.sessieId === sessieId && d.status === 'wachtlijst');
-    if(eersteOpWachtlijst){
-      eersteOpWachtlijst.status = 'deelnemer';
-      toast(`${lidNaam(eersteOpWachtlijst.lidId)} is van de wachtlijst doorgeschoven naar deelnemer.`, 'succes');
-    }
-  }
-  save();
-  renderSessies();
+async function leaveSessie(sessieId){
+  if(!mijnLid) return;
+  // De database-trigger promoveer_wachtlijst() schuift automatisch de
+  // eerstvolgende wachtlijst-plek door zodra deze rij verdwijnt.
+  const { error } = await supabaseClient
+    .from('sessie_deelnemers').delete().eq('sessie_id', sessieId).eq('lid_id', mijnLid.id);
+  if(error){ toast('Uitschrijven mislukt: ' + error.message, 'fout'); return; }
+  toast('Uitgeschreven.', 'succes');
+  await ververs();
 }
 
 /* ============================================================
@@ -1471,18 +1507,19 @@ function renderBanen(){
   const datumFilter = document.getElementById('banen-datum').value;
   const locatieFilter = document.getElementById('banen-locatie').value;
 
-  const gefilterd = state.baanreserveringen
+  const gefilterd = dbBaanreserveringen
     .filter(b => (!datumFilter || b.datum === datumFilter) && (!locatieFilter || b.locatie === locatieFilter))
-    .sort((a,b) => a.datum.localeCompare(b.datum) || a.tijdslot.localeCompare(b.tijdslot));
+    .sort((a,b) => a.datum.localeCompare(b.datum) || a.start_tijd.localeCompare(b.start_tijd));
 
   tbody.innerHTML = gefilterd.map(b => `
     <tr>
       <td>${datumNL(b.datum)}</td>
-      <td>${escapeHtml(b.tijdslot)}</td>
+      <td>Baan ${b.baan_nummer}</td>
+      <td>${tijdKort(b.start_tijd)}–${tijdKort(b.eind_tijd)}</td>
       <td>${escapeHtml(b.locatie)}</td>
-      <td>${lidNaam(b.lidId)}</td>
+      <td>${dbLidNaam(b.lid_id)}</td>
       <td style="text-align:right;">
-        ${b.lidId === state.huidigeGebruikerId ? `<button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderBaanreservering('${b.id}')">Annuleren</button>` : ''}
+        ${mijnLid && b.lid_id === mijnLid.id ? `<button class="btn btn-ghost btn-sm" style="color:var(--rood);" onclick="verwijderBaanreservering('${b.id}')">Annuleren</button>` : ''}
       </td>
     </tr>
   `).join('');
@@ -1491,70 +1528,68 @@ function renderBanen(){
 }
 
 function openBaanDialog(){
-  document.getElementById('baan-datum-input').valueAsDate = new Date(Date.parse('2026-07-14'));
+  document.getElementById('baan-datum-input').valueAsDate = new Date();
   document.getElementById('dialog-baan').showModal();
 }
 
-function addBaanreservering(e){
+async function addBaanreservering(e){
   e.preventDefault();
-  const locatie = document.getElementById('baan-locatie-input').value;
-  const datum = document.getElementById('baan-datum-input').value;
-  const tijdslot = document.getElementById('baan-tijdslot-input').value;
-
-  const bestaat = state.baanreserveringen.some(b => b.locatie === locatie && b.datum === datum && b.tijdslot === tijdslot);
-  if(bestaat){
-    toast('Dit tijdslot is al gereserveerd op deze baan. Kies een ander tijdslot.', 'fout');
+  const nieuw = {
+    organisatie_id: mijnLid.organisatie_id,
+    locatie: document.getElementById('baan-locatie-input').value,
+    baan_nummer: parseInt(document.getElementById('baan-nummer-input').value, 10),
+    datum: document.getElementById('baan-datum-input').value,
+    start_tijd: document.getElementById('baan-start-input').value,
+    eind_tijd: document.getElementById('baan-eind-input').value,
+    lid_id: mijnLid.id,
+  };
+  const { error } = await supabaseClient.from('baanreserveringen').insert(nieuw);
+  if(error){
+    if(error.code === '23505'){
+      toast('Deze baan is op dit tijdstip al gereserveerd. Kies een andere baan of tijd.', 'fout');
+    } else {
+      toast('Reserveren mislukt: ' + error.message, 'fout');
+    }
     return;
   }
-
-  state.baanreserveringen.push({ id: uid('baan'), locatie, datum, tijdslot, lidId: state.huidigeGebruikerId });
-  save();
   dichtDialog('dialog-baan');
-  renderBanen();
   toast('Baan gereserveerd.', 'succes');
+  await ververs();
 }
 
-function verwijderBaanreservering(id){
-  state.baanreserveringen = state.baanreserveringen.filter(b => b.id !== id);
-  save();
-  renderBanen();
+async function verwijderBaanreservering(id){
+  const { error } = await supabaseClient.from('baanreserveringen').delete().eq('id', id);
+  if(error){ toast('Annuleren mislukt: ' + error.message, 'fout'); return; }
   toast('Reservering geannuleerd.', 'succes');
+  await ververs();
 }
 
-function toggleBaanreservering(actief){
-  state.organisatie.baanreserveringActief = actief;
-  save();
-  renderAlles();
+async function toggleBaanreservering(actief){
+  if(!mijnLid) return;
+  const { error } = await supabaseClient
+    .from('organisaties').update({ baanreservering_actief: actief }).eq('id', mijnLid.organisatie_id);
+  if(error){
+    toast('Alleen bestuur en penningmeester mogen dit wijzigen.', 'fout');
+    document.getElementById('toggle-baanreservering').checked = !actief;
+    return;
+  }
   toast(actief ? 'Baanreservering-module ingeschakeld.' : 'Baanreservering-module uitgeschakeld.', 'succes');
+  await ververs();
 }
 
 /* ============================================================
    WEDSTRIJDEN & ELO-RATING
+   De rating-berekening zelf staat nu in de database-functie
+   registreer_wedstrijd() (supabase/fase2.sql) — die werkt de
+   rating/wins/matches van alle 4 spelers in één keer bij, wat een
+   gewoon lid met de kolombeveiliging uit Fase 1 niet zelf via een
+   directe update zou mogen doen.
    ============================================================ */
-function berekenElo(teamAIds, teamBIds, scoreA, scoreB){
-  const K = 24;
-  const teamA = teamAIds.map(id => state.leden.find(l => l.id === id));
-  const teamB = teamBIds.map(id => state.leden.find(l => l.id === id));
-  const ratingA = teamA.reduce((s,l) => s + l.rating, 0) / teamA.length;
-  const ratingB = teamB.reduce((s,l) => s + l.rating, 0) / teamB.length;
-
-  const verwachtA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-  const verwachtB = 1 - verwachtA;
-  const werkelijkA = scoreA > scoreB ? 1 : 0;
-  const werkelijkB = 1 - werkelijkA;
-
-  const deltaA = Math.round(K * (werkelijkA - verwachtA));
-  const deltaB = Math.round(K * (werkelijkB - verwachtB));
-
-  teamA.forEach(l => { l.rating += deltaA; l.matches += 1; if(werkelijkA === 1) l.wins += 1; });
-  teamB.forEach(l => { l.rating += deltaB; l.matches += 1; if(werkelijkB === 1) l.wins += 1; });
-}
-
 function openWedstrijdDialog(){
   document.getElementById('dialog-wedstrijd').showModal();
 }
 
-function addWedstrijd(e){
+async function addWedstrijd(e){
   e.preventDefault();
   const teamA = [document.getElementById('wed-a1').value, document.getElementById('wed-a2').value];
   const teamB = [document.getElementById('wed-b1').value, document.getElementById('wed-b2').value];
@@ -1571,19 +1606,20 @@ function addWedstrijd(e){
     return;
   }
 
-  berekenElo(teamA, teamB, scoreA, scoreB);
-  state.wedstrijden.unshift({ id: uid('wed'), teamA, teamB, scoreA, scoreB, gespeeldOp: new Date().toISOString().slice(0,10) });
-  save();
+  const { error } = await supabaseClient.rpc('registreer_wedstrijd', {
+    p_team_a: teamA, p_team_b: teamB, p_score_a: scoreA, p_score_b: scoreB,
+  });
+  if(error){ toast(error.message, 'fout'); return; }
   dichtDialog('dialog-wedstrijd');
-  renderAlles();
   toast('Uitslag verwerkt, ratings bijgewerkt.', 'succes');
+  await ververs();
 }
 
 function renderWedstrijden(){
   const ranglijstBody = document.getElementById('ranglijst-tbody');
   if(!ranglijstBody) return;
 
-  const gesorteerd = [...state.leden].sort((a,b) => b.rating - a.rating);
+  const gesorteerd = [...dbLeden].sort((a,b) => b.rating - a.rating);
   ranglijstBody.innerHTML = gesorteerd.map((l, i) => {
     const winrate = l.matches ? Math.round((l.wins / l.matches) * 100) : 0;
     return `
@@ -1597,12 +1633,15 @@ function renderWedstrijden(){
   }).join('');
 
   const lijst = document.getElementById('wedstrijden-lijst');
-  lijst.innerHTML = state.wedstrijden.slice(0,8).map(w => `
+  lijst.innerHTML = dbWedstrijden.slice(0,8).map(w => {
+    const teamA = w.wedstrijd_deelnemers.filter(d => d.team === 'a').map(d => dbLidNaam(d.lid_id));
+    const teamB = w.wedstrijd_deelnemers.filter(d => d.team === 'b').map(d => dbLidNaam(d.lid_id));
+    return `
     <div style="padding:10px 0;border-bottom:1px solid var(--rand);font-size:13px;">
-      <div><b>${w.teamA.map(lidNaam).join(' &amp; ')}</b> <span style="color:var(--tekst-zacht);">vs</span> <b>${w.teamB.map(lidNaam).join(' &amp; ')}</b></div>
-      <div class="sessie-meta">${w.scoreA} – ${w.scoreB} · ${datumNL(w.gespeeldOp)}</div>
-    </div>
-  `).join('') || '<div class="leeg">Nog geen wedstrijden gespeeld.</div>';
+      <div><b>${teamA.map(escapeHtml).join(' &amp; ')}</b> <span style="color:var(--tekst-zacht);">vs</span> <b>${teamB.map(escapeHtml).join(' &amp; ')}</b></div>
+      <div class="sessie-meta">${w.score_a} – ${w.score_b} · ${datumNL(w.gespeeld_op)}</div>
+    </div>`;
+  }).join('') || '<div class="leeg">Nog geen wedstrijden gespeeld.</div>';
 }
 
 /* ============================================================
@@ -1799,7 +1838,8 @@ function renderFinancieel(){
 function renderInstellingen(){
   const toggle = document.getElementById('toggle-baanreservering');
   if(!toggle) return;
-  toggle.checked = !!state.organisatie.baanreserveringActief;
+  toggle.checked = !!(dbOrganisatie && dbOrganisatie.baanreservering_actief);
+  toggle.disabled = !magLedenBeheren();
 }
 
 /* ---------- init ---------- */
