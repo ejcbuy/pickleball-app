@@ -521,7 +521,10 @@
     <!-- CONTRIBUTIE -->
     <section id="view-contributie" class="view hidden">
       <div class="paneel" style="margin-bottom:20px;">
-        <div class="paneel-hoofd"><h2>Kies je bundel</h2></div>
+        <div class="paneel-hoofd">
+          <h2>Kies je bundel</h2>
+          <button class="btn btn-primary btn-sm hidden" id="btn-nieuwe-bundel" onclick="openBundelDialog()">+ Nieuwe bundel</button>
+        </div>
         <div class="paneel-body">
           <div class="bundels-grid" id="bundels-grid"></div>
         </div>
@@ -744,6 +747,36 @@
     <div class="dialog-voet">
       <button type="button" class="btn" onclick="dichtDialog('dialog-nieuws')">Annuleren</button>
       <button type="submit" class="btn btn-primary">Plaatsen</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialoog: Bundel bewerken (bestuur/penningmeester) -->
+<dialog id="dialog-bundel">
+  <form method="dialog" onsubmit="opslaanBundel(event)">
+    <div class="dialog-hoofd"><h3 id="dialog-bundel-titel">Nieuwe bundel</h3><button type="button" class="sluit-x" onclick="dichtDialog('dialog-bundel')">✕</button></div>
+    <div class="dialog-body">
+      <input type="hidden" id="bundel-id">
+      <div class="veld"><label>Naam</label><input type="text" id="bundel-naam" required></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Prijs (€)</label><input type="number" step="0.01" min="0" id="bundel-prijs" required></div>
+        <div class="veld"><label>Geldigheid</label><input type="text" id="bundel-geldigheid" placeholder="bijv. 3 maanden" required></div>
+      </div>
+      <div class="veld"><label>Omschrijving</label><textarea id="bundel-omschrijving" rows="2"></textarea></div>
+      <div class="veld-rij">
+        <div class="veld"><label>Speelbeurten (999 = onbeperkt)</label><input type="number" min="1" id="bundel-speelbeurten" required></div>
+        <div class="veld"><label>Status</label>
+          <select id="bundel-actief">
+            <option value="true">Actief (zichtbaar voor leden)</option>
+            <option value="false">Inactief (verborgen)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-voet">
+      <button type="button" class="btn btn-outline-danger hidden" id="btn-verwijder-bundel" onclick="verwijderBundelVanuitDialog()">Verwijderen</button>
+      <button type="button" class="btn" onclick="dichtDialog('dialog-bundel')">Annuleren</button>
+      <button type="submit" class="btn btn-primary">Opslaan</button>
     </div>
   </form>
 </dialog>
@@ -1753,20 +1786,27 @@ function addNieuws(e){
 function renderContributie(){
   const grid = document.getElementById('bundels-grid');
   if(!grid) return;
+  const magBeheren = magLedenBeheren();
 
-  grid.innerHTML = dbBundels.map(b => `
+  document.getElementById('btn-nieuwe-bundel').classList.toggle('hidden', !magBeheren);
+
+  const zichtbareBundels = magBeheren ? dbBundels : dbBundels.filter(b => b.actief);
+
+  grid.innerHTML = zichtbareBundels.map(b => `
     <div class="bundel-card ${mijnLid && mijnLid.bundel_id === b.id ? 'actief-bundel' : ''}">
       <div>
         <div class="prijs">${euro(b.prijs)} <small>/ ${b.geldigheid}</small></div>
         <b>${escapeHtml(b.naam)}</b>
+        ${!b.actief ? '<span class="badge badge-inactief" style="margin-left:6px;">Inactief</span>' : ''}
       </div>
       <p>${escapeHtml(b.omschrijving)}</p>
       <div class="sessie-meta">${b.speelbeurten >= 999 ? 'Onbeperkt speelbeurten' : b.speelbeurten + ' speelbeurten'}</div>
-      ${mijnLid && mijnLid.bundel_id === b.id
+      ${magBeheren ? `<button class="btn btn-sm" style="width:100%;margin-top:4px;" onclick="openBundelDialog('${b.id}')">Bewerken</button>` : ''}
+      ${!magBeheren ? (mijnLid && mijnLid.bundel_id === b.id
         ? `<button class="btn btn-sm" disabled>Huidige bundel</button>`
-        : `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="doPayment('${b.id}')">Betaal met iDEAL</button>`}
+        : `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px;" onclick="doPayment('${b.id}')">Betaal met iDEAL</button>`) : ''}
     </div>
-  `).join('');
+  `).join('') || '<div class="leeg">Nog geen bundels.</div>';
 
   const tbody = document.getElementById('mijn-betalingen-tbody');
   const mijnBetalingen = mijnLid ? dbBetalingen.filter(b => b.lid_id === mijnLid.id) : [];
@@ -1780,6 +1820,70 @@ function renderContributie(){
     </tr>
   `).join('');
   document.getElementById('mijn-betalingen-leeg').classList.toggle('hidden', mijnBetalingen.length > 0);
+}
+
+function openBundelDialog(bundelId){
+  if(!magLedenBeheren()){ toast('Alleen bestuur en penningmeester mogen bundels beheren.', 'fout'); return; }
+  const dialog = document.getElementById('dialog-bundel');
+  const verwijderKnop = document.getElementById('btn-verwijder-bundel');
+  if(bundelId){
+    const b = dbBundels.find(x => x.id === bundelId);
+    if(!b) return;
+    document.getElementById('dialog-bundel-titel').textContent = 'Bundel bewerken';
+    document.getElementById('bundel-id').value = b.id;
+    document.getElementById('bundel-naam').value = b.naam;
+    document.getElementById('bundel-prijs').value = b.prijs;
+    document.getElementById('bundel-geldigheid').value = b.geldigheid || '';
+    document.getElementById('bundel-omschrijving').value = b.omschrijving || '';
+    document.getElementById('bundel-speelbeurten').value = b.speelbeurten;
+    document.getElementById('bundel-actief').value = String(b.actief);
+    verwijderKnop.classList.remove('hidden');
+  } else {
+    document.getElementById('dialog-bundel-titel').textContent = 'Nieuwe bundel';
+    document.getElementById('bundel-id').value = '';
+    ['bundel-naam','bundel-prijs','bundel-geldigheid','bundel-omschrijving','bundel-speelbeurten'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bundel-actief').value = 'true';
+    verwijderKnop.classList.add('hidden');
+  }
+  dialog.showModal();
+}
+
+async function opslaanBundel(e){
+  e.preventDefault();
+  const id = document.getElementById('bundel-id').value;
+  const gegevens = {
+    naam: document.getElementById('bundel-naam').value.trim(),
+    prijs: parseFloat(document.getElementById('bundel-prijs').value),
+    geldigheid: document.getElementById('bundel-geldigheid').value.trim(),
+    omschrijving: document.getElementById('bundel-omschrijving').value.trim(),
+    speelbeurten: parseInt(document.getElementById('bundel-speelbeurten').value, 10),
+    actief: document.getElementById('bundel-actief').value === 'true',
+  };
+
+  let error;
+  if(id){
+    ({ error } = await supabaseClient.from('bundels').update(gegevens).eq('id', id));
+  } else {
+    const code = gegevens.naam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || uid('bundel');
+    ({ error } = await supabaseClient.from('bundels').insert({
+      ...gegevens, code, organisatie_id: mijnLid.organisatie_id,
+    }));
+  }
+  if(error){ toast('Opslaan mislukt: ' + error.message, 'fout'); return; }
+  dichtDialog('dialog-bundel');
+  toast('Bundel opgeslagen.', 'succes');
+  await ververs();
+}
+
+async function verwijderBundelVanuitDialog(){
+  const id = document.getElementById('bundel-id').value;
+  if(!id) return;
+  if(!confirm('Deze bundel verwijderen? Leden met deze bundel behouden hun huidige toegang, maar kunnen hem niet opnieuw kiezen.')) return;
+  const { error } = await supabaseClient.from('bundels').delete().eq('id', id);
+  if(error){ toast('Verwijderen mislukt: ' + error.message, 'fout'); return; }
+  dichtDialog('dialog-bundel');
+  toast('Bundel verwijderd.', 'succes');
+  await ververs();
 }
 
 async function doPayment(bundelId){
