@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ledenpanel — Pickleball Den Haag</title>
+<title>Ledenpanel</title>
 <style>
   :root{
     --groen-donker:#0b3d2e;
@@ -287,8 +287,8 @@
 <div id="auth-gate">
   <div class="auth-kaart">
     <div class="auth-logo">
-      <div class="logo-badge">PDH</div>
-      <div><b>Pickleball Den Haag</b><small>Ledenpanel — inloggen</small></div>
+      <div class="logo-badge" id="auth-logo-badge"></div>
+      <div><b id="auth-logo-naam"></b><small>Ledenpanel — inloggen</small></div>
     </div>
 
     <div class="auth-tabs">
@@ -328,8 +328,8 @@
 
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-badge">PDH</div>
-    <div class="logo-tekst">Pickleball Den Haag<small>Ledenpanel — prototype</small></div>
+    <div class="logo-badge" id="sidebar-logo-badge"></div>
+    <div class="logo-tekst" id="sidebar-logo-naam"><small>Ledenpanel</small></div>
   </div>
 
   <nav class="navlist" id="navlist"></nav>
@@ -563,7 +563,7 @@
           <div class="instelling-rij">
             <div>
               <div class="label">Baanreservering-module</div>
-              <div class="uitleg">Optionele module — alleen aanzetten voor organisaties waar leden zelf een specifieke baan/tijdslot claimen (bijv. sportcentra met baanverhuur). Pickleball Den Haag gebruikt een vast rooster per niveau-klasse en heeft dit niet nodig.</div>
+              <div class="uitleg">Optionele module — alleen aanzetten als leden zelf een specifieke baan/tijdslot moeten claimen (bijv. sportcentra met baanverhuur). Clubs met een vast rooster per niveau-klasse hebben dit niet nodig.</div>
             </div>
             <label class="toggle">
               <input type="checkbox" id="toggle-baanreservering" onchange="toggleBaanreservering(this.checked)">
@@ -788,11 +788,11 @@
 
 <script>
 /* ============================================================
-   Pickleball Den Haag — Ledenpanel (prototype)
-   Data zit volledig in localStorage. Veldnamen volgen bewust
-   het schema uit bouwplan.md, zodat de omzetting naar Supabase
-   in een latere fase grotendeels 1-op-1 kan (zelfde functies,
-   arrays worden queries).
+   Ledenpanel — herbruikbaar voor elke pickleball-/racketsportclub.
+   Branding (naam/logo) komt uit supabase-config.js en de
+   organisaties-tabel, zie ORGANISATIE_NAAM/ORGANISATIE_LOGO_TEKST.
+   Marktplaats/Nieuws/demo-schakelaar staan nog op localStorage —
+   zie CLAUDE.md voor de actuele projectstatus per fase.
    ============================================================ */
 
 /* ============================================================
@@ -810,6 +810,18 @@ let wachtwoordHerstelModus = false;
 
 function toonApp(){ document.body.classList.remove('niet-ingelogd'); }
 function toonAuthGate(){ document.body.classList.add('niet-ingelogd'); }
+
+// Branding: vóór inloggen komt dit uit supabase-config.js (de database is
+// dan nog niet opvraagbaar); ná inloggen wordt dit overschreven met de
+// echte waarde uit de organisaties-tabel (zie opnieuwLadenNaAuth).
+function toonBranding(naam, logoTekst){
+  document.title = 'Ledenpanel — ' + naam;
+  document.getElementById('auth-logo-badge').textContent = logoTekst;
+  document.getElementById('auth-logo-naam').textContent = naam;
+  document.getElementById('sidebar-logo-badge').textContent = logoTekst;
+  document.getElementById('sidebar-logo-naam').innerHTML = escapeHtml(naam) + '<small>Ledenpanel</small>';
+}
+toonBranding(ORGANISATIE_NAAM, ORGANISATIE_LOGO_TEKST);
 
 function wisselAuthTab(tab){
   verbergAuthMelding();
@@ -918,6 +930,7 @@ async function opnieuwLadenNaAuth(){
   authGebruiker = user;
   mijnLid = user ? await ensureLidRow(user) : null;
   if(mijnLid) await laadDatabaseData();
+  if(dbOrganisatie) toonBranding(dbOrganisatie.naam, ORGANISATIE_LOGO_TEKST);
   bijwerkenAuthStatus();
   renderAccount();
   renderAlles();
