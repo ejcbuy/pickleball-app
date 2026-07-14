@@ -10,6 +10,13 @@
 //   APP_URL         — bijv. https://ejcbuy.github.io/pickleball-app
 // SUPABASE_URL, SUPABASE_ANON_KEY en SUPABASE_SERVICE_ROLE_KEY staan al
 // automatisch klaar in elke Edge Function, die hoef je niet zelf te zetten.
+//
+// DRY RUN: zolang MOLLIE_API_KEY niet gezet is (of leeg is), wordt er geen
+// echte Mollie-aanroep gedaan. In plaats daarvan wordt doorgestuurd naar
+// fake-mollie-checkout.html, een simpele testpagina die dezelfde database-
+// en e-mailflow doorloopt (via mollie-webhook) zonder dat er echt geld bij
+// komt kijken. Zodra je een echte MOLLIE_API_KEY zet, verdwijnt dit pad
+// automatisch — zie de serverside-check in mollie-webhook/index.ts.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -66,10 +73,42 @@ Deno.serve(async (req) => {
     }
 
     const appUrl = Deno.env.get('APP_URL') || '';
+    const mollieKey = Deno.env.get('MOLLIE_API_KEY');
+
+    if (!mollieKey) {
+      // ---- DRY RUN: geen echte Mollie-aanroep, alleen simulatie ----
+      const dryRunId = 'dryrun_' + crypto.randomUUID();
+      const { error: insertError } = await supabaseAdmin.from('betalingen').insert({
+        lid_id: user.id,
+        bundel_id: bundel.id,
+        bedrag: bundel.prijs,
+        methode: 'ideal',
+        mollie_payment_id: dryRunId,
+        status: 'open',
+      });
+      if (insertError) {
+        return new Response(JSON.stringify({ error: 'Databasefout: ' + insertError.message }), {
+          status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+        });
+      }
+      const redirectUrl = `${appUrl}/ledenpanel.html?betaling=voltooid`;
+      const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/mollie-webhook`;
+      const checkoutUrl = `${appUrl}/fake-mollie-checkout.html`
+        + `?paymentId=${encodeURIComponent(dryRunId)}`
+        + `&bedrag=${encodeURIComponent(bundel.prijs)}`
+        + `&bundel=${encodeURIComponent(bundel.naam)}`
+        + `&redirectUrl=${encodeURIComponent(redirectUrl)}`
+        + `&webhookUrl=${encodeURIComponent(webhookUrl)}`;
+      return new Response(JSON.stringify({ checkoutUrl, dryRun: true }), {
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ---- Echte Mollie-aanroep ----
     const mollieRes = await fetch('https://api.mollie.com/v2/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('MOLLIE_API_KEY')}`,
+        'Authorization': `Bearer ${mollieKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
