@@ -182,7 +182,38 @@ grant execute on function registreer_wedstrijd(uuid[], uuid[], int, int) to auth
 --    ontbrak nog: Fase 1 had alleen een SELECT-policy.
 -- ------------------------------------------------------------
 
+drop policy if exists "organisatie: bestuur/penningmeester werkt eigen organisatie bij" on organisaties;
 create policy "organisatie: bestuur/penningmeester werkt eigen organisatie bij"
   on organisaties for update
   using (id = eigen_organisatie_id() and eigen_rol() in ('bestuur','penningmeester'))
   with check (id = eigen_organisatie_id());
+
+-- ------------------------------------------------------------
+-- 4) Baanreservering: boekingsvenster van 2 weken
+--    Een baan kan pas gereserveerd worden vanaf 2 weken voor de
+--    datum (en niet meer voor een datum in het verleden). Dit
+--    voorkomt dat leden maanden vooruit alle sloten claimen, en
+--    is de gangbare regel bij sportcentra die banen verhuren.
+-- ------------------------------------------------------------
+
+create or replace function valideer_baanreservering_venster()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.datum < current_date then
+    raise exception 'Je kunt geen baan reserveren in het verleden.';
+  end if;
+  if new.datum > current_date + 14 then
+    raise exception 'Deze baan kan pas vanaf 2 weken voor de datum gereserveerd worden.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists baanreserveringen_venster on baanreserveringen;
+create trigger baanreserveringen_venster
+  before insert on baanreserveringen
+  for each row
+  execute function valideer_baanreservering_venster();
